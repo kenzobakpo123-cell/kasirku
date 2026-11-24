@@ -1,6 +1,8 @@
 # Panduan deploy
 
 Dua jalur: **Vercel + MySQL cloud** (paling cepat) atau **VPS/Docker** (kontrol penuh).
+Repo produksi: <https://github.com/kenzobakpo123-cell/kasirku>. Project Vercel: `kasirku` (team `kafa10`),
+di-import dari repo tersebut. Deploy otomatis terjadi setiap push ke `main`.
 
 ## Opsi A — Vercel
 
@@ -33,7 +35,7 @@ npm run db:seed   # opsional, HANYA untuk demo
 https://kasirku.vercel.app/api/billing/midtrans/webhook
 ```
 
-6. Cek: `/`, `/login`, `/register`, `/robots.txt`, `/sitemap.xml`.
+6. Cek: `/`, `/login`, `/register`, `/robots.txt`, `/sitemap.xml`, dan `GET /api/health` harus mengembalikan `{"ok":true}`.
 
 > Catatan: `output: "standalone"` aman di Vercel; Vercel tetap memakai builder-nya sendiri.
 

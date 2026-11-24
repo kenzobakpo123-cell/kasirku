@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:vercel": "prisma migrate deploy && next build",
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
@@ -13,6 +14,7 @@
     "postinstall": "prisma generate",
     "db:migrate:dev": "prisma migrate dev",
     "db:migrate": "prisma migrate deploy",
+    "db:status": "prisma migrate status",
     "db:seed": "node prisma/seed.mjs",
     "db:studio": "prisma studio"
   },

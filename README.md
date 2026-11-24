@@ -103,6 +103,15 @@ mengonfirmasi status ke API Midtrans sebelum mengaktifkan paket, jadi tidak bisa
 - [x] 59 unit test, lint, typecheck, build hijau + robots/sitemap
 - [ ] Video demo final & deploy production
 
+## GitHub & Vercel
+
+- Repo: <https://github.com/kenzobakpo123-cell/kasirku>, branch utama `main`.
+- GitHub Actions menjalankan lint, test, migrasi Prisma, dan build pada setiap push/pull request.
+- Vercel: project `kasirku` di team `kafa10`, di-import dari repo tersebut. `vercel.json` memakai `npm run build:vercel` yang menjalankan `prisma migrate deploy && next build`.
+- Secret production diisi di Vercel Dashboard, bukan di Git. Template: [`.env.production.example`](.env.production.example).
+- Health check setelah deploy: `GET /api/health` → `200` bila database terhubung.
+- URL produksi: akan dicantumkan setelah deploy pertama berhasil.
+
 Cara kerja: [`docs/CARA-KERJA.md`](docs/CARA-KERJA.md). Panduan demo: [`docs/DEMO.md`](docs/DEMO.md).
 Catatan teknis: [`docs/ARSITEKTUR.md`](docs/ARSITEKTUR.md). Deploy: [`docs/DEPLOY.md`](docs/DEPLOY.md).
 Naskah video: [`docs/VIDEO.md`](docs/VIDEO.md).
