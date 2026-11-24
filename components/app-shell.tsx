@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Viewer } from "@/lib/auth";
 import type { MembershipInfo } from "@/lib/tenant";
 import { LogoutButton } from "@/components/logout-button";
+import { SidebarNav } from "@/components/sidebar-nav";
 import { TenantSwitcher } from "@/components/tenant-switcher";
 
 export function AppShell({
@@ -20,32 +21,36 @@ export function AppShell({
   children: React.ReactNode;
 }) {
   return (
-    <>
-      <header className="container">
-        <nav className="nav">
-          <Link href="/dashboard" className="logo">
-            <span className="logo-mark">K</span>
-            Kasirku
-          </Link>
-          <div className="nav-links">
-            <Link href="/dashboard">Dashboard</Link>
-            <Link href="/kasir">Kasir</Link>
-            <Link href="/produk">Produk</Link>
-            <Link href="/laporan">Laporan</Link>
-            <Link href="/tim">Tim</Link>
-            {isAgency ? <Link href="/agency">Agensi</Link> : null}
-            <Link href="/tagihan">Tagihan</Link>
-            {isAdmin ? <Link href="/admin">Admin</Link> : null}
-            <TenantSwitcher memberships={memberships} activeTenantId={activeTenantId} />
-            <Link href="/akun" className="small muted">{viewer.email}</Link>
+    <div className="app-shell">
+      <aside className="app-sidebar">
+        <Link href="/dashboard" className="logo">
+          <span className="logo-mark">K</span>
+          Kasirku
+        </Link>
+        <SidebarNav isAgency={isAgency} isAdmin={isAdmin} />
+        <div className="sidebar-foot">
+          <div className="sidebar-shop">Toko aktif</div>
+          <TenantSwitcher memberships={memberships} activeTenantId={activeTenantId} />
+          <div className="sidebar-user">
+            <Link href="/akun" title={viewer.email}>{viewer.email}</Link>
             <LogoutButton />
           </div>
+        </div>
+      </aside>
+
+      <div className="app-main">
+        <nav className="mobile-nav" aria-label="Navigasi utama">
+          <Link href="/dashboard" className="logo">
+            <span className="logo-mark">K</span>
+          </Link>
+          <SidebarNav isAgency={isAgency} isAdmin={isAdmin} variant="mobile" />
+          <div className="mobile-shop">
+            <TenantSwitcher memberships={memberships} activeTenantId={activeTenantId} />
+          </div>
+          <LogoutButton />
         </nav>
-      </header>
-      <main className="container">{children}</main>
-      <footer className="footer">
-        <div className="container">Kasirku · mode demo</div>
-      </footer>
-    </>
+        <div className="app-main-inner">{children}</div>
+      </div>
+    </div>
   );
 }

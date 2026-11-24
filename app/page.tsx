@@ -1,35 +1,85 @@
 import Link from "next/link";
 
-const features = [
+type IconName = "receipt" | "box" | "chart" | "building" | "lock" | "device";
+
+function Icon({ name }: { name: IconName }) {
+  const paths: Record<IconName, React.ReactNode> = {
+    receipt: (
+      <>
+        <path d="M5 3h14v18l-3-2-4 2-4-2-3 2V3Z" />
+        <path d="M9 8h6M9 12h6M9 16h3" />
+      </>
+    ),
+    box: (
+      <>
+        <path d="M3 7.5 12 3l9 4.5v9L12 21l-9-4.5v-9Z" />
+        <path d="m3 7.5 9 4.5 9-4.5M12 12v9" />
+      </>
+    ),
+    chart: (
+      <>
+        <path d="M4 20V4M4 20h16" />
+        <path d="m7 15 4-5 3 3 5-7" />
+      </>
+    ),
+    building: (
+      <>
+        <path d="M4 21V6l8-3 8 3v15" />
+        <path d="M9 21v-5h6v5M8 9h.01M12 9h.01M16 9h.01M8 13h.01M16 13h.01" />
+      </>
+    ),
+    lock: (
+      <>
+        <rect x="4" y="10" width="16" height="11" rx="2" />
+        <path d="M8 10V7a4 4 0 0 1 8 0v3M12 15v2" />
+      </>
+    ),
+    device: (
+      <>
+        <rect x="7" y="2" width="10" height="20" rx="2" />
+        <path d="M11 18h2" />
+      </>
+    ),
+  };
+  return (
+    <span className="feature-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        {paths[name]}
+      </svg>
+    </span>
+  );
+}
+
+const features: Array<{ icon: IconName; title: string; body: string }> = [
   {
-    icon: "🧾",
-    title: "Kasir yang cepat",
-    body: "Cari produk, susun keranjang, diskon, dan cetak struk 58 mm atau kirim lewat WhatsApp.",
+    icon: "receipt",
+    title: "Kasir yang tidak bikin antre panjang",
+    body: "Cari produk, atur diskon, terima bayar, lalu struk langsung jadi. Bisa dicetak 58 mm atau dikirim ke WhatsApp.",
   },
   {
-    icon: "📦",
-    title: "Stok selalu akurat",
-    body: "Setiap penjualan otomatis mengurangi stok. Riwayat mutasi tercatat rapi, stok menipis langsung terlihat.",
+    icon: "box",
+    title: "Stok yang bisa dipercaya",
+    body: "Tiap transaksi mengurangi stok secara aman. Riwayat mutasi tercatat, stok menipis muncul sebelum kehabisan.",
   },
   {
-    icon: "📊",
-    title: "Laporan siap pakai",
-    body: "Penjualan harian, produk terlaris, dan ekspor CSV — tanpa perlu buka spreadsheet lagi.",
+    icon: "chart",
+    title: "Laporan tanpa drama",
+    body: "Omzet harian, laba kotor, dan produk terlaris tersaji rapi. Ekspor CSV kalau perlu dibawa ke accountant.",
   },
   {
-    icon: "🏢",
-    title: "Mode agensi",
-    body: "Satu akun untuk kelola banyak toko klien. Laporan gabungan dan komisi referral sudah termasuk.",
+    icon: "building",
+    title: "Satu dashboard untuk banyak klien",
+    body: "Agensi memantau semua toko, mengundang kasir, dan memantau komisi referral dari satu tempat.",
   },
   {
-    icon: "🔒",
-    title: "Aman & teraudit",
-    body: "Sesi per perangkat, hak akses kasir/manager/owner, dan log aktivitas untuk setiap perubahan.",
+    icon: "lock",
+    title: "Akses yang jelas dan teraudit",
+    body: "Peran owner, manager, dan kasir dibedakan. Sesi perangkat bisa dicabut, setiap perubahan tercatat.",
   },
   {
-    icon: "📱",
-    title: "Bisa dipasang di HP",
-    body: "Buka di browser, pasang sebagai aplikasi. Kasir tetap nyaman dipakai di tablet counter.",
+    icon: "device",
+    title: "Nyaman di HP dan tablet",
+    body: "Pasang ke layar utama seperti aplikasi. Transaksi saat sinyal mati masuk antrean dan sinkron otomatis.",
   },
 ];
 
@@ -38,184 +88,260 @@ const plans = [
     name: "Gratis",
     amount: "Rp0",
     period: "selamanya",
-    features: ["1 outlet", "100 transaksi / bulan", "3 produk", "Laporan dasar"],
-    popular: false,
+    features: ["1 outlet", "100 transaksi / bulan", "3 produk aktif", "Laporan dasar"],
+    featured: false,
   },
   {
     name: "Pro",
     amount: "Rp199.000",
     period: "per outlet / bulan",
-    features: ["Stok tanpa batas", "Multi-kasir", "Struk & laporan lengkap", "Ekspor CSV"],
-    popular: true,
+    features: ["Produk & stok tanpa batas", "Multi-kasir + hak akses", "Struk cetak & WhatsApp", "Laporan lengkap + CSV"],
+    featured: true,
   },
   {
     name: "Agency",
     amount: "Rp499.000",
     period: "per bulan",
-    features: ["Kelola banyak klien", "Laporan gabungan", "White-label", "Komisi referral 15%"],
-    popular: false,
+    features: ["Kelola banyak klien", "Laporan gabungan", "Kode referral + komisi 15%", "Prioritas pendampingan"],
+    featured: false,
+  },
+];
+
+const faqs = [
+  {
+    q: "Apakah bisa dipakai tanpa install aplikasi?",
+    a: "Bisa. Kasirku berjalan di browser dan bisa ditambahkan ke layar utama HP atau tablet. Tidak perlu download dari play store, tidak perlu server sendiri.",
+  },
+  {
+    q: "Bagaimana kalau dua kasir menjual produk yang sama bersamaan?",
+    a: "Setiap pembayaran memakai transaksi database bersyarat: stok hanya berkurang kalau jumlahnya masih cukup. Kalau tidak, transaksi ditolak — stok tidak pernah minus.",
+  },
+  {
+    q: "Kenapa agensi yang jadi pembeli utamanya?",
+    a: "Karena agensi sudah dipercaya UMKM. Mereka bisa menyiapkan toko, melatih kasir, lalu mengelola banyak klien dari satu akun. Kami menyediakan dashboard dan komisi referral untuk model itu.",
+  },
+  {
+    q: "Bisa pindah dari spreadsheet?",
+    a: "Ya. Import produk lewat CSV, lalu ekspor laporan kapan saja. Paket setup Rp500.000 sudah termasuk bantuan import dan pelatihan singkat.",
   },
 ];
 
 export default function HomePage() {
   return (
     <>
-      <header className="container">
-        <nav className="nav">
-          <Link href="/" className="logo">
-            <span className="logo-mark">K</span>
-            Kasirku
-          </Link>
-          <div className="nav-links">
-            <Link href="#fitur">Fitur</Link>
-            <Link href="#cara">Cara kerja</Link>
-            <Link href="#studi">Studi kasus</Link>
-            <Link href="#harga">Harga</Link>
-            <Link href="/login">Masuk</Link>
-            <Link href="/register" className="btn btn-primary btn-sm">
-              Mulai gratis
+      <header className="site-header">
+        <div className="container">
+          <nav className="nav">
+            <Link href="/" className="logo">
+              <span className="logo-mark">K</span>
+              Kasirku
             </Link>
-          </div>
-        </nav>
+            <div className="nav-links">
+              <Link href="#fitur">Fitur</Link>
+              <Link href="#cara">Cara kerja</Link>
+              <Link href="#studi">Contoh penggunaan</Link>
+              <Link href="#harga">Harga</Link>
+            </div>
+            <div className="nav-cta">
+              <Link href="/login" className="small muted">Masuk</Link>
+              <Link href="/register" className="btn btn-primary btn-sm">Mulai gratis</Link>
+            </div>
+          </nav>
+        </div>
       </header>
 
       <main>
         <section className="container hero">
-          <span className="eyebrow">Untuk UMKM & agensi yang mendampinginya</span>
-          <h1>Kasir beres, stok terkontrol, laporan langsung jadi.</h1>
-          <p>
-            Kasirku bikin warung dan kedai bisa jualan lebih cepat tanpa spreadsheet berantakan. Agensi
-            bisa kelola banyak klien dari satu dashboard — dan dapat komisi dari setiap referral.
-          </p>
-          <div className="toolbar">
-            <Link href="/register" className="btn btn-primary">
-              Buat toko gratis →
-            </Link>
-            <Link href="#fitur" className="btn btn-ghost">
-              Lihat fitur
-            </Link>
+          <div className="hero-copy">
+            <span className="eyebrow">Kasir & stok untuk UMKM Indonesia</span>
+            <h1>Counter rapi, stok pasti, <mark>laporan langsung jadi.</mark></h1>
+            <p>
+              Kasirku membantu kedai dan warung menjual lebih cepat tanpa spreadsheet berantakan.
+              Agensi bisa mengelola banyak klien dari satu dashboard — dan mendapat komisi dari setiap referral.
+            </p>
+            <div className="toolbar">
+              <Link href="/register" className="btn btn-primary">Buat toko gratis →</Link>
+              <Link href="#fitur" className="btn btn-ghost">Lihat fiturnya</Link>
+            </div>
+            <p className="hero-note">Tanpa kartu kredit. Bisa dipakai dalam 5 menit.</p>
           </div>
-          <p className="small muted">Tanpa kartu kredit. Siap dipakai dalam 5 menit.</p>
+
+          <div className="mock" aria-hidden="true">
+            <div className="mock-bar">
+              <i></i><i></i><i></i><span>Kasir · Kopi Senja</span>
+            </div>
+            <div className="mock-body">
+              <div className="mock-left">
+                <div className="mock-title">Produk</div>
+                <div className="mock-search">Cari nama atau SKU…</div>
+                <div className="mock-item"><span>Kopi Americano <b>18rb</b></span><span className="plus">+</span></div>
+                <div className="mock-item"><span>Kopi Latte <b>22rb</b></span><span className="plus">+</span></div>
+                <div className="mock-item"><span>Croissant <b>15rb</b></span><span className="plus">+</span></div>
+                <div className="mock-item"><span>Teh Hangat <b>8rb</b></span><span className="plus">+</span></div>
+              </div>
+              <div className="mock-right">
+                <div className="mock-title">Keranjang</div>
+                <div className="mock-cart-row"><span>2× Americano</span><span>36.000</span></div>
+                <div className="mock-cart-row"><span>1× Croissant</span><span>15.000</span></div>
+                <div className="mock-total"><span>Total</span><span>51.000</span></div>
+                <div className="mock-pay">Bayar 51.000</div>
+                <p className="small muted" style={{ fontSize: 10, marginTop: 12 }}>Stok otomatis berkurang setelah bayar.</p>
+              </div>
+            </div>
+            <div className="mock-foot">
+              <span>Omzet <b>Rp306.000</b></span>
+              <span>Transaksi <b>8</b></span>
+              <span>Stok menipis <b>1</b></span>
+            </div>
+          </div>
         </section>
 
+        <div className="container">
+          <div className="stat-strip">
+            <div><b>5 menit</b><span>siap pakai sejak daftar</span></div>
+            <div><b>0 panci</b><span>tanpa server & install ribet</span></div>
+            <div><b>1 dashboard</b><span>untuk semua toko klien</span></div>
+          </div>
+        </div>
+
         <section className="container section" id="fitur">
-          <h2>Satu aplikasi, semua yang counter butuh</h2>
-          <p className="section-lead">Fokus pada hal yang bikin pemilik toko tidur tenang.</p>
-          <div className="grid grid-3">
+          <div className="section-head">
+            <span className="section-index">01 / Fitur</span>
+            <div>
+              <h2>Yang benar-benar dipakai setiap hari</h2>
+              <p className="section-lead">Bukan daftar fitur untuk brosur. Ini alur yang kasir dan owner jalani dari pagi sampai tutup toko.</p>
+            </div>
+          </div>
+          <div className="feature-list">
             {features.map((feature) => (
-              <div className="card feature" key={feature.title}>
-                <div className="icon" aria-hidden="true">{feature.icon}</div>
+              <article className="feature-item" key={feature.title}>
+                <Icon name={feature.icon} />
                 <h3>{feature.title}</h3>
                 <p>{feature.body}</p>
-              </div>
+              </article>
             ))}
           </div>
         </section>
 
         <section className="container section" id="cara">
-          <h2>Mulai dalam 3 langkah</h2>
-          <p className="section-lead">Tidak perlu install, tidak perlu server sendiri.</p>
-          <div className="grid grid-3">
-            {[
-              ["1", "Daftar & buat toko", "Isi nama toko. outlet Kasir Utama langsung siap dipakai."],
-              ["2", "Masukkan produk", "Nama, harga, modal, dan stok awal. Bisa import lewat CSV."],
-              ["3", "Buka kasir & jualan", "Cari produk, terima bayar, stok otomatis berkurang."],
-            ].map(([step, title, body]) => (
-              <div className="card feature" key={step}>
-                <span className="badge badge-ok">{step}</span>
-                <h3>{title}</h3>
-                <p>{body}</p>
-              </div>
-            ))}
+          <div className="section-head">
+            <span className="section-index">02 / Cara kerja</span>
+            <div>
+              <h2>Tiga langkah, selesai</h2>
+              <p className="section-lead">Tidak perlu tim IT. Tidak perlu migrasi besar-besaran.</p>
+            </div>
+          </div>
+          <div className="steps">
+            <article className="step">
+              <span className="step-num">LANGKAH 01</span>
+              <h3>Daftar & buat toko</h3>
+              <p>Isi nama toko. Outlet “Kasir Utama” langsung siap dipakai tanpa konfigurasi tambahan.</p>
+            </article>
+            <article className="step">
+              <span className="step-num">LANGKAH 02</span>
+              <h3>Masukkan produk</h3>
+              <p>Isi harga, modal, dan stok awal. Datanya banyak? Import lewat CSV dengan contoh yang sudah disediakan.</p>
+            </article>
+            <article className="step">
+              <span className="step-num">LANGKAH 03</span>
+              <h3>Buka kasir & jualan</h3>
+              <p>Cari produk, terima pembayaran, stok otomatis berkurang. Laporan langsung terisi sendiri.</p>
+            </article>
           </div>
         </section>
 
         <section className="container section" id="studi">
-          <h2>Contoh penggunaan nyata</h2>
-          <p className="section-lead">Skenario demo yang bisa langsung kamu tunjukkan ke klien.</p>
-          <div className="grid grid-3">
-            <div className="card feature">
-              <div className="icon" aria-hidden="true">☕</div>
-              <h3>Kopi Senja</h3>
-              <p>4 produk, 8 transaksi dalam 12 hari. Stok Kue Coklat otomatis masuk panel “stok menipis”.</p>
-            </div>
-            <div className="card feature">
-              <div className="icon" aria-hidden="true">👕</div>
-              <h3>Baju Rapi</h3>
-              <p>Tote bag tinggal 2 pcs. Kasir langsung dapat peringatan, owner tinggal restock dari halaman Produk.</p>
-            </div>
-            <div className="card feature">
-              <div className="icon" aria-hidden="true">🤝</div>
-              <h3>Agensi Kreatif</h3>
-              <p>Satu akun memantau 3 klien. Kode <strong>RANI15</strong> memberi komisi 15% dari omzet referral.</p>
+          <div className="section-head">
+            <span className="section-index">03 / Contoh</span>
+            <div>
+              <h2>Lihat seperti apa dipakainya</h2>
+              <p className="section-lead">Skenario dari data demo yang bisa langsung kamu buka dan tunjukkan ke klien.</p>
             </div>
           </div>
-          <p className="small muted" style={{ marginTop: 14 }}>
-            Angka di atas berasal dari data seed demo, bukan klaim klien nyata — transparan untuk material portofolio.
-          </p>
+          <div className="cases">
+            <article className="case-row">
+              <h3>Kopi Senja</h3>
+              <p>Empat produk, delapan transaksi. Stok Kue Coklat masuk panel “stok menipis” begitu menyentuh batas minimum.</p>
+              <div className="case-metric"><b>Rp306rb</b><span>omzet demo</span></div>
+            </article>
+            <article className="case-row">
+              <h3>Baju Rapi</h3>
+              <p>Tote bag tinggal dua potong. Kasir memberi peringatan, owner tinggal klik “+ Stok” dan mutasi tercatat otomatis.</p>
+              <div className="case-metric"><b>2 pcs</b><span>stok menipis</span></div>
+            </article>
+            <article className="case-row">
+              <h3>Agensi Kreatif</h3>
+              <p>Satu akun memantau tiga klien. Kode <strong>RANI15</strong> memberi komisi 15% dari omzet referral yang masuk.</p>
+              <div className="case-metric"><b>15%</b><span>komisi referral</span></div>
+            </article>
+          </div>
+          <p className="disclaimer">Angka di atas berasal dari data seed demo, bukan klaim klien nyata — sengaja kami transparankan untuk material portofolio.</p>
         </section>
 
         <section className="container section" id="faq">
-          <h2>Pertanyaan yang sering muncul</h2>
-          <div className="grid grid-2">
-            <div className="card">
-              <h3>Bisa dipakai di HP?</h3>
-              <p className="small muted">Bisa. Buka di browser, lalu “Tambah ke layar utama”. Antrean transaksi offline otomatis sinkron saat sinyal kembali.</p>
+          <div className="faq">
+            <div>
+              <span className="section-index">04 / Pertanyaan</span>
+              <h2>Yang biasanya ditanya calon pembeli</h2>
+              <p className="section-lead">Kalau ada yang belum terjawab, aku bisa bantu jelaskan langsung saat demo.</p>
             </div>
-            <div className="card">
-              <h3>Bagaimana kalau stok habis barengan?</h3>
-              <p className="small muted">Setiap pembayaran memakai transaksi database bersyarat: stok hanya berkurang kalau masih cukup. Tidak bisa minus.</p>
-            </div>
-            <div className="card">
-              <h3>Agensi dapat apa?</h3>
-              <p className="small muted">Dashboard gabungan semua klien, kode referral dengan komisi, dan akses multi-toko dari satu akun.</p>
-            </div>
-            <div className="card">
-              <h3>Bisa pindah dari spreadsheet?</h3>
-              <p className="small muted">Ya. Import produk lewat CSV, ekspor laporan kapan saja. Pendampingan import masuk paket setup.</p>
+            <div>
+              {faqs.map((faq) => (
+                <details key={faq.q}>
+                  <summary>{faq.q}</summary>
+                  <p>{faq.a}</p>
+                </details>
+              ))}
             </div>
           </div>
         </section>
 
         <section className="container section" id="harga">
-          <h2>Harga yang jelas</h2>
-          <p className="section-lead">Mulai gratis. Naik paket saat transaksi kamu bertambah.</p>
-          <div className="grid grid-3">
+          <div className="section-head">
+            <span className="section-index">05 / Harga</span>
+            <div>
+              <h2>Harga jelas, tanpa biaya tersembunyi</h2>
+              <p className="section-lead">Mulai gratis. Naik paket saat transaksi sudah berjalan.</p>
+            </div>
+          </div>
+          <div className="pricing">
             {plans.map((plan) => (
-              <div className={`card price${plan.popular ? " popular" : ""}`} key={plan.name}>
-                {plan.popular ? <span className="tag">Paling dipilih</span> : null}
-                <h3>{plan.name}</h3>
-                <div className="amount">
-                  {plan.amount} <small>/ {plan.period}</small>
-                </div>
-                <ul>
-                  {plan.features.map((item) => (
-                    <li key={item}>{item}</li>
-                  ))}
+              <article className={`price-card${plan.featured ? " featured" : ""}`} key={plan.name}>
+                <span className="price-name">{plan.name}</span>
+                <div className="price-amount">{plan.amount} <small>/ {plan.period}</small></div>
+                <ul className="price-features">
+                  {plan.features.map((item) => <li key={item}>{item}</li>)}
                 </ul>
-                <Link href="/register" className={`btn ${plan.popular ? "btn-primary" : "btn-ghost"}`}>
+                <Link href="/register" className={`btn ${plan.featured ? "btn-accent" : "btn-ghost"}`}>
                   Pilih {plan.name}
                 </Link>
-              </div>
+              </article>
             ))}
           </div>
-          <p className="notice" style={{ marginTop: 18 }}>
-            Butuh bantuan import produk dan pelatihan kasir? Paket setup Rp500.000 — gratis untuk 5 klien pertama.
-          </p>
+          <div className="setup-note">
+            <span><b>Butuh bantuan mulai?</b> Paket setup Rp500.000 mencakup import produk dan pelatihan kasir.</span>
+            <span className="small muted">Gratis untuk 5 klien pertama agensi.</span>
+          </div>
         </section>
 
         <section className="container section">
-          <div className="card" style={{ textAlign: "center", padding: 44 }}>
-            <span className="eyebrow">Mulai hari ini</span>
-            <h2 style={{ fontSize: 30, margin: "0 0 10px" }}>Coba Kasirku 5 menit, bukan 5 hari.</h2>
-            <p className="section-lead">Buat toko gratis. Kalau cocok, naik paket saat transaksi sudah berjalan.</p>
-            <Link href="/register" className="btn btn-primary">Buat toko gratis →</Link>
+          <div className="cta-band">
+            <div>
+              <h2>Coba Kasirku 5 menit, bukan 5 hari.</h2>
+              <p>Buat toko gratis. Kalau cocok, naik paket saat transaksi sudah berjalan.</p>
+            </div>
+            <Link href="/register" className="btn btn-accent btn-sm">Buat toko gratis →</Link>
           </div>
         </section>
       </main>
 
       <footer className="footer">
-        <div className="container">© {new Date().getFullYear()} Kasirku. Dibuat untuk UMKM Indonesia.</div>
+        <div className="container footer-inner">
+          <div><strong>Kasirku</strong> · dibuat untuk UMKM Indonesia.</div>
+          <div>
+            <Link href="/login">Masuk</Link> &nbsp;·&nbsp; <Link href="/register">Daftar</Link> &nbsp;·&nbsp; <Link href="#harga">Harga</Link>
+          </div>
+        </div>
       </footer>
     </>
   );

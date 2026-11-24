@@ -18,7 +18,7 @@ export function LogoutButton() {
   }
 
   return (
-    <button className="btn btn-ghost btn-sm" onClick={logout} disabled={loading} type="button">
+    <button className="logout-btn" onClick={logout} disabled={loading} type="button">
       {loading ? "Keluar…" : "Keluar"}
     </button>
   );

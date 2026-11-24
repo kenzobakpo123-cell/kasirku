@@ -32,11 +32,8 @@ export function TenantSwitcher({
   }
 
   return (
-    <label className="small muted" style={{ display: "flex", alignItems: "center", gap: 8 }}>
-      Toko
+    <div>
       <select
-        className="input"
-        style={{ width: "auto", minWidth: 150 }}
         value={activeTenantId}
         disabled={pending || memberships.length === 0}
         onChange={(event) => change(Number(event.target.value))}
@@ -48,7 +45,7 @@ export function TenantSwitcher({
           </option>
         ))}
       </select>
-      {error ? <span className="error" style={{ margin: 0 }}>{error}</span> : null}
-    </label>
+      {error ? <span className="small" style={{ color: "#f2b8b4", display: "block", marginTop: 6 }}>{error}</span> : null}
+    </div>
   );
 }

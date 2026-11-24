@@ -52,69 +52,92 @@ export function AuthForm({ mode, defaultReferral = "" }: { mode: Mode; defaultRe
   }
 
   return (
-    <main className="container auth-wrap">
-      <h1>{isRegister ? "Buat toko pertama" : "Selamat datang kembali"}</h1>
-      <p className="lead">
-        {isRegister ? "Isi data singkat untuk mulai pakai Kasirku." : "Masuk untuk melanjutkan ke dashboard."}
-      </p>
-
-      <form className="card" onSubmit={handleSubmit}>
-        {error ? <div className="error" role="alert">{error}</div> : null}
-
-        {isRegister ? (
-          <>
-            <label className="field">
-              <span>Kode referral <span className="muted">(opsional)</span></span>
-              <input className="input" name="referralCode" defaultValue={defaultReferral} placeholder="MASUKKAN-KODE" />
-            </label>
-            <label className="field">
-              <span>Nama kamu</span>
-              <input className="input" name="name" required minLength={2} maxLength={80} autoComplete="name" />
-            </label>
-            <label className="field">
-              <span>Nama toko</span>
-              <input className="input" name="tenantName" required minLength={2} maxLength={120} />
-            </label>
-          </>
-        ) : null}
-
-        <label className="field">
-          <span>Email</span>
-          <input className="input" type="email" name="email" required autoComplete="email" />
-        </label>
-        <label className="field">
-          <span>Password</span>
-          <input
-            className="input"
-            type="password"
-            name="password"
-            required
-            minLength={isRegister ? 8 : 1}
-            autoComplete={isRegister ? "new-password" : "current-password"}
-          />
-        </label>
-
-        <button className="btn btn-primary" type="submit" disabled={loading} style={{ width: "100%" }}>
-          {loading ? "Tunggu sebentar…" : isRegister ? "Buat akun & toko" : "Masuk"}
-        </button>
-        {!isRegister ? (
-          <p className="small muted" style={{ marginBottom: 0 }}>
-            <Link href="/lupa-password">Lupa password?</Link>
+    <main className="auth-layout">
+      <aside className="auth-aside">
+        <div>
+          <Link href="/" className="logo" style={{ color: "#fff", marginBottom: 44 }}>
+            <span className="logo-mark">K</span>
+            Kasirku
+          </Link>
+          <h2>{isRegister ? "Toko rapi mulai hari ini." : "Selamat datang kembali."}</h2>
+          <p>
+            Satu tempat untuk kasir, stok, dan laporan. Dirancang untuk UMKM yang bergerak cepat,
+            dan untuk agensi yang mendampingi banyak klien.
           </p>
-        ) : null}
-      </form>
+          <ul>
+            <li>Tanpa kartu kredit untuk mulai</li>
+            <li>Stok aman dari transaksi ganda</li>
+            <li>Bisa dipakai di HP dan tablet</li>
+          </ul>
+        </div>
+        <div className="aside-foot">Kasirku · dibuat untuk UMKM Indonesia</div>
+      </aside>
 
-      <p className="hint">
-        {isRegister ? (
-          <>
-            Sudah punya akun? <Link href="/login">Masuk</Link>
-          </>
-        ) : (
-          <>
-            Belum punya akun? <Link href="/register">Daftar gratis</Link>
-          </>
-        )}
-      </p>
+      <section className="auth-panel">
+        <h1>{isRegister ? "Buat toko pertama" : "Masuk ke workspace"}</h1>
+        <p className="lead">
+          {isRegister ? "Isi data singkat untuk mulai jualan." : "Lanjutkan ke dashboard toko kamu."}
+        </p>
+
+        <form onSubmit={handleSubmit}>
+          {error ? <div className="error" role="alert">{error}</div> : null}
+
+          {isRegister ? (
+            <>
+              <label className="field">
+                <span>Kode referral <span className="muted">(opsional)</span></span>
+                <input className="input" name="referralCode" defaultValue={defaultReferral} placeholder="MASUKKAN-KODE" />
+              </label>
+              <label className="field">
+                <span>Nama kamu</span>
+                <input className="input" name="name" required minLength={2} maxLength={80} autoComplete="name" />
+              </label>
+              <label className="field">
+                <span>Nama toko</span>
+                <input className="input" name="tenantName" required minLength={2} maxLength={120} />
+              </label>
+            </>
+          ) : null}
+
+          <label className="field">
+            <span>Email</span>
+            <input className="input" type="email" name="email" required autoComplete="email" />
+          </label>
+          <label className="field">
+            <span>Password</span>
+            <input
+              className="input"
+              type="password"
+              name="password"
+              required
+              minLength={isRegister ? 8 : 1}
+              autoComplete={isRegister ? "new-password" : "current-password"}
+            />
+          </label>
+
+          <button className="btn btn-primary" type="submit" disabled={loading} style={{ width: "100%" }}>
+            {loading ? "Tunggu sebentar…" : isRegister ? "Buat akun & toko" : "Masuk"}
+          </button>
+          {!isRegister ? (
+            <p className="small muted" style={{ marginBottom: 0 }}>
+              <Link href="/lupa-password">Lupa password?</Link>
+            </p>
+          ) : null}
+        </form>
+
+        <p className="hint">
+          {isRegister ? (
+            <>
+              Sudah punya akun? <Link href="/login">Masuk</Link>
+            </>
+          ) : (
+            <>
+              Belum punya akun? <Link href="/register">Daftar gratis</Link>
+            </>
+          )}
+        </p>
+        <p className="hint" style={{ marginTop: 8 }}><Link href="/">← Kembali ke beranda</Link></p>
+      </section>
     </main>
   );
 }

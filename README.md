@@ -87,6 +87,7 @@ mengonfirmasi status ke API Midtrans sebelum mengaktifkan paket, jadi tidak bisa
 - [x] Manajemen tim (RBAC) & outlet, edit produk + restock dengan riwayat mutasi
 - [x] Antrean transaksi offline dengan idempotency key + auto-sinkron
 - [x] Landing page conversion: cara kerja, studi kasus, FAQ, CTA
+- [x] Identitas visual custom: font self-hosted, layout editorial, ikon SVG, sidebar workspace (tanpa template generik)
 - [x] Import produk CSV (header ID/EN, validasi baris, batas paket, riwayat stok)
 - [x] Akun & keamanan: sesi perangkat + cabut akses, ganti password mencabut sesi lain
 - [x] Midtrans Snap (checkout + webhook terverifikasi + aktivasi paket idempoten)
