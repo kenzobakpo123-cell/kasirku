@@ -6,7 +6,7 @@ import { db } from "@/lib/db";
 import { resetMail, sendMail } from "@/lib/mail";
 import { clientIp, forbidden, isSameOrigin, rateLimit } from "@/lib/security";
 
-const schema = z.object({ email: z.email().max(120) });
+const schema = z.object({ email: z.email().max(120).transform((value) => value.toLowerCase()) });
 
 export async function POST(req: NextRequest) {
   if (!isSameOrigin(req)) return forbidden();

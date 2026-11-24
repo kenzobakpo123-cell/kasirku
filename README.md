@@ -100,7 +100,7 @@ mengonfirmasi status ke API Midtrans sebelum mengaktifkan paket, jadi tidak bisa
 - [x] CI GitHub Actions (typecheck, lint, test, build)
 - [x] Dockerfile + docker-compose produksi + panduan Vercel
 - [x] Naskah video demo 3 menit
-- [x] 58 unit test, lint, typecheck, build hijau + robots/sitemap
+- [x] 59 unit test, lint, typecheck, build hijau + robots/sitemap
 - [ ] Video demo final & deploy production
 
 Cara kerja: [`docs/CARA-KERJA.md`](docs/CARA-KERJA.md). Panduan demo: [`docs/DEMO.md`](docs/DEMO.md).

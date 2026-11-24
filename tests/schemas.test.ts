@@ -23,10 +23,11 @@ describe("schemas", () => {
     const result = registerSchema.safeParse({
       name: "Andi",
       tenantName: "Kedai Andi",
-      email: "andi@example.com",
+      email: "Andi@Example.com",
       password: "rahasia-kuat-123",
     });
     expect(result.success).toBe(true);
+    if (result.success) expect(result.data.email).toBe("andi@example.com");
   });
 
   it("menolak harga produk nol atau negatif", () => {
@@ -112,7 +113,10 @@ describe("schemas", () => {
     ).toBe(false);
   });
 
-  it("login menerima password apa pun sebagai string", () => {
+  it("login menerima password apa pun dan menormalkan email", () => {
     expect(loginSchema.safeParse({ email: "a@b.com", password: "x" }).success).toBe(true);
+    const result = loginSchema.safeParse({ email: "KOPI@KASIRKU.TEST", password: "demo12345" });
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.email).toBe("kopi@kasirku.test");
   });
 });

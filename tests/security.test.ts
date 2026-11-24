@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { deviceLabel, rateLimit } from "@/lib/security";
+import { deviceLabel, rateLimit, resetRateLimit } from "@/lib/security";
 
 describe("rateLimit", () => {
   it("mengizinkan sampai batas lalu menolak", () => {
@@ -9,6 +9,14 @@ describe("rateLimit", () => {
     const third = rateLimit(key, 2, 60_000);
     expect(third.allowed).toBe(false);
     expect(third.retryAfter).toBeGreaterThan(0);
+  });
+
+  it("bisa di-reset setelah login berhasil", () => {
+    const key = `test-reset-${Math.random()}`;
+    expect(rateLimit(key, 1, 60_000).allowed).toBe(true);
+    expect(rateLimit(key, 1, 60_000).allowed).toBe(false);
+    resetRateLimit(key);
+    expect(rateLimit(key, 1, 60_000).allowed).toBe(true);
   });
 });
 

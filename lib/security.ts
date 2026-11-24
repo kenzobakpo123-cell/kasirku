@@ -25,6 +25,11 @@ export function rateLimit(key: string, limit: number, windowMs: number) {
   return { allowed: true, retryAfter: 0 };
 }
 
+/** Hapus kuota setelah login berhasil atau saat perlu reset dari kode. */
+export function resetRateLimit(key: string) {
+  buckets.delete(key);
+}
+
 const IP_PATTERN = /^[0-9a-fA-F.:]+$/;
 
 export function clientIp(req: NextRequest): string | null {

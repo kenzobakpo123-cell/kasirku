@@ -4,7 +4,7 @@ import { REFRESH_TOKEN_MAX_AGE, signAccessToken } from "@/lib/auth";
 import { audit } from "@/lib/audit";
 import { setAuthCookies, setTenantCookie } from "@/lib/cookies";
 import { db } from "@/lib/db";
-import { clientIp, deviceLabel, forbidden, isSameOrigin, rateLimit } from "@/lib/security";
+import { clientIp, deviceLabel, forbidden, isSameOrigin, rateLimit, resetRateLimit } from "@/lib/security";
 import { loginSchema } from "@/lib/schemas";
 import { hashToken, newToken } from "@/lib/tokens";
 
@@ -29,14 +29,7 @@ export async function POST(req: NextRequest) {
   }
 
   const { email, password } = parsed.data;
-  const perAccount = rateLimit(`login-email:${email}`, 5, 15 * 60_000);
-  if (!perAccount.allowed) {
-    await bcrypt.compare(password, DUMMY_HASH);
-    return NextResponse.json(
-      { error: `Terlalu banyak percobaan untuk akun ini. Coba lagi ${perAccount.retryAfter} detik.` },
-      { status: 429, headers: { "Retry-After": String(perAccount.retryAfter) } },
-    );
-  }
+  const accountKey = `login-email:${email}`;
 
   const user = await db.user.findUnique({
     where: { email },
@@ -45,8 +38,18 @@ export async function POST(req: NextRequest) {
   const valid = await bcrypt.compare(password, user?.passwordHash ?? DUMMY_HASH);
   if (!user || !valid) {
     void audit({ action: "LOGIN_FAILED", req });
+    // Hanya percobaan gagal yang menghitung kuota. Login berhasil menghapus kuota.
+    const limited = rateLimit(accountKey, 5, 15 * 60_000);
+    if (!limited.allowed) {
+      return NextResponse.json(
+        { error: `Terlalu banyak percobaan untuk akun ini. Coba lagi ${limited.retryAfter} detik.` },
+        { status: 429, headers: { "Retry-After": String(limited.retryAfter) } },
+      );
+    }
     return NextResponse.json(WRONG, { status: 401 });
   }
+
+  resetRateLimit(accountKey);
 
   const membership = await db.membership.findFirst({
     where: { userId: user.id },

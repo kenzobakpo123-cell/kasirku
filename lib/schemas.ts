@@ -11,14 +11,14 @@ export const passwordSchema = z
 
 export const registerSchema = z.object({
   name: z.string().trim().min(2).max(80),
-  email: z.email().max(120),
+  email: z.email().max(120).transform((value) => value.toLowerCase()),
   password: passwordSchema,
   tenantName: z.string().trim().min(2).max(120),
   referralCode: z.string().trim().min(4).max(24).optional(),
 });
 
 export const loginSchema = z.object({
-  email: z.email().max(120),
+  email: z.email().max(120).transform((value) => value.toLowerCase()),
   password: z.string().min(1).max(100),
 });
 
