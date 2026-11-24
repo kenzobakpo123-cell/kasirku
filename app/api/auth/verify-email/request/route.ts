@@ -1,20 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
+import { protectArcjet } from "@/lib/arcjet";
 import { viewerFromRequest } from "@/lib/auth";
 import { createEmailToken } from "@/lib/email-tokens";
 import { db } from "@/lib/db";
 import { sendMail, verificationMail } from "@/lib/mail";
-import { clientIp, forbidden, isSameOrigin, rateLimit } from "@/lib/security";
+import { forbidden, isSameOrigin } from "@/lib/security";
 
 export async function POST(req: NextRequest) {
   if (!isSameOrigin(req)) return forbidden();
   const viewer = await viewerFromRequest(req);
   if (!viewer) return NextResponse.json({ error: "Silakan masuk lagi." }, { status: 401 });
 
-  const limited = rateLimit(`verify:${clientIp(req) ?? "unknown"}`, 5, 60 * 60_000);
-  if (!limited.allowed) {
+  const guard = await protectArcjet(req, "write");
+  if (guard.denied) {
     return NextResponse.json(
-      { error: `Terlalu banyak permintaan. Coba lagi ${limited.retryAfter} detik.` },
-      { status: 429 },
+      { error: guard.error },
+      { status: guard.status, headers: { "Retry-After": String(guard.retryAfter) } },
     );
   }
 

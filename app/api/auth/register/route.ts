@@ -2,12 +2,13 @@ import { randomBytes } from "node:crypto";
 import bcrypt from "bcryptjs";
 import { NextRequest, NextResponse } from "next/server";
 import { ACCESS_TOKEN_MAX_AGE, REFRESH_TOKEN_MAX_AGE, signAccessToken } from "@/lib/auth";
+import { protectArcjet } from "@/lib/arcjet";
 import { audit } from "@/lib/audit";
 import { setAuthCookies, setTenantCookie } from "@/lib/cookies";
 import { db } from "@/lib/db";
 import { createEmailToken } from "@/lib/email-tokens";
 import { sendMail, verificationMail } from "@/lib/mail";
-import { deviceLabel, forbidden, isSameOrigin, rateLimit, clientIp } from "@/lib/security";
+import { deviceLabel, forbidden, isSameOrigin, clientIp } from "@/lib/security";
 import { registerSchema } from "@/lib/schemas";
 import { hashToken, newToken } from "@/lib/tokens";
 
@@ -23,17 +24,17 @@ function slugify(value: string): string {
 export async function POST(req: NextRequest) {
   if (!isSameOrigin(req)) return forbidden();
 
-  const limited = rateLimit(`register:${clientIp(req) ?? "unknown"}`, 10, 60 * 60_000);
-  if (!limited.allowed) {
-    return NextResponse.json(
-      { error: `Terlalu banyak pendaftaran. Coba lagi ${limited.retryAfter} detik.` },
-      { status: 429, headers: { "Retry-After": String(limited.retryAfter) } },
-    );
-  }
-
   const parsed = registerSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
     return NextResponse.json({ error: "Data tidak valid", details: parsed.error.flatten() }, { status: 400 });
+  }
+
+  const guard = await protectArcjet(req, "register", parsed.data.email);
+  if (guard.denied) {
+    return NextResponse.json(
+      { error: guard.error },
+      { status: guard.status, headers: { "Retry-After": String(guard.retryAfter) } },
+    );
   }
 
   const { name, email, password, tenantName, referralCode } = parsed.data;

@@ -93,6 +93,8 @@ mengonfirmasi status ke API Midtrans sebelum mengaktifkan paket, jadi tidak bisa
 - [x] Akun & keamanan: sesi perangkat + cabut akses, ganti password mencabut sesi lain
 - [x] Midtrans Snap (checkout + webhook terverifikasi + aktivasi paket idempoten)
 - [x] Email verifikasi + lupa/reset password (token di-hash, sekali pakai, Resend)
+- [x] Arcjet WAF + rate limit terpusat dan validasi email pendaftaran
+- [x] Two-factor authentication TOTP + kode pemulihan sekali pakai
 - [x] Barcode scanner kamera (BarcodeDetector + fallback ZXing) + label CODE128 per produk
 - [x] Gambar produk (upload ringkas, pratinjau, tampil di kasir & keranjang)
 - [x] Member pembeli otomatis dari email + pencarian nama/email + ringkasan belanja
@@ -114,6 +116,8 @@ mengonfirmasi status ke API Midtrans sebelum mengaktifkan paket, jadi tidak bisa
 - URL produksi: <https://kasirku-psi-two.vercel.app>.
 - Database produksi: MySQL Railway (project `valiant-compassion`) dengan database `kasirku`; kredensial hanya tersimpan sebagai secret Vercel.
 - Email produksi sudah aktif lewat Resend dengan pengirim `onboarding@resend.dev` (penerima dibatasi akun Resend sampai domain sendiri diverifikasi).
+- `ARCJET_KEY` sudah aktif di Vercel untuk Shield/WAF, validasi email, dan rate limit lintas instance.
+- Pengguna bisa mengaktifkan 2FA TOTP dari halaman **Akun & Keamanan**; kode pemulihan sekali pakai dibuat saat aktivasi.
 - Akun demo produksi memakai kredensial yang sama dengan seed lokal (`admin@kasirku.test`, `agency@kasirku.test`, `kopi@kasirku.test`, `baju@kasirku.test`).
 
 Cara kerja: [`docs/CARA-KERJA.md`](docs/CARA-KERJA.md). Panduan demo: [`docs/DEMO.md`](docs/DEMO.md).

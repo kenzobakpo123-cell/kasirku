@@ -13,6 +13,10 @@ export default async function AccountPage() {
     orderBy: { lastUsedAt: "desc" },
     select: { id: true, label: true, ip: true, createdAt: true, lastUsedAt: true, expiresAt: true },
   });
+  const twoFactor = await db.user.findUnique({
+    where: { id: viewer.uid },
+    select: { twoFactorEnabled: true },
+  });
 
   return (
     <AppShell viewer={viewer} memberships={memberships} activeTenantId={tenantId} isAgency={isAgency} isAdmin={isAdmin}>
@@ -22,6 +26,7 @@ export default async function AccountPage() {
         sessions={sessions}
         currentId={viewer.sid}
         emailVerifiedAt={viewer.emailVerifiedAt}
+        twoFactorEnabled={twoFactor?.twoFactorEnabled ?? false}
       />
     </AppShell>
   );

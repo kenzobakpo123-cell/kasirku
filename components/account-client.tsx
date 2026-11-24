@@ -21,12 +21,14 @@ export function AccountClient({
   sessions,
   currentId,
   emailVerifiedAt,
+  twoFactorEnabled,
 }: {
   name: string;
   email: string;
   sessions: Session[];
   currentId: number | null;
   emailVerifiedAt: Date | null;
+  twoFactorEnabled: boolean;
 }) {
   const router = useRouter();
   const [current, setCurrent] = useState("");
@@ -35,6 +37,11 @@ export function AccountClient({
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState("");
+  const [twoFactorSecret, setTwoFactorSecret] = useState("");
+  const [twoFactorUri, setTwoFactorUri] = useState("");
+  const [twoFactorCode, setTwoFactorCode] = useState("");
+  const [recoveryCode, setRecoveryCode] = useState("");
+  const [disablePassword, setDisablePassword] = useState("");
 
   async function changePassword(event: React.FormEvent) {
     event.preventDefault();
@@ -102,6 +109,76 @@ export function AccountClient({
     }
   }
 
+  async function startTwoFactor() {
+    setError("");
+    setNotice("");
+    setBusy("2fa-setup");
+    try {
+      const res = await fetch("/api/account/two-factor/setup", { method: "POST", headers });
+      const data = (await res.json()) as { error?: string; secret?: string; uri?: string };
+      if (!res.ok) throw new Error(data.error ?? "Gagal menyiapkan dua faktor.");
+      setTwoFactorSecret(data.secret ?? "");
+      setTwoFactorUri(data.uri ?? "");
+      setRecoveryCode("");
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Gagal menyiapkan dua faktor.");
+    } finally {
+      setBusy("");
+    }
+  }
+
+  async function enableTwoFactor(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError("");
+    setNotice("");
+    setBusy("2fa-enable");
+    try {
+      const res = await fetch("/api/account/two-factor/enable", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ code: twoFactorCode }),
+      });
+      const data = (await res.json()) as { error?: string; recoveryCode?: string };
+      if (!res.ok) throw new Error(data.error ?? "Gagal mengaktifkan dua faktor.");
+      setRecoveryCode(data.recoveryCode ?? "");
+      setTwoFactorSecret("");
+      setTwoFactorUri("");
+      setTwoFactorCode("");
+      setNotice("Dua faktor aktif. Simpan kode pemulihan di tempat aman.");
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Gagal mengaktifkan dua faktor.");
+    } finally {
+      setBusy("");
+    }
+  }
+
+  async function disableTwoFactor(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError("");
+    setNotice("");
+    setBusy("2fa-disable");
+    try {
+      const res = await fetch("/api/account/two-factor/disable", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ code: twoFactorCode, password: disablePassword }),
+      });
+      const data = (await res.json()) as { error?: string };
+      if (!res.ok) throw new Error(data.error ?? "Gagal menonaktifkan dua faktor.");
+      setTwoFactorCode("");
+      setDisablePassword("");
+      setRecoveryCode("");
+      setNotice("Verifikasi dua faktor dinonaktifkan.");
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Gagal menonaktifkan dua faktor.");
+    } finally {
+      setBusy("");
+    }
+  }
+
   return (
     <>
       <div className="page-head">
@@ -130,6 +207,87 @@ export function AccountClient({
             <span className="badge badge-ok">Terverifikasi</span>
           )}
         </div>
+      </section>
+
+      <section className="card" style={{ marginBottom: 18 }}>
+        <h2 className="section-title">Verifikasi dua faktor</h2>
+        {twoFactorEnabled ? (
+          <>
+            <p className="small muted" style={{ marginTop: 4 }}>
+              Akun dilindungi kode 6 digit dari aplikasi authenticator.
+            </p>
+            {recoveryCode ? (
+              <p className="small" style={{ color: "var(--ok)" }}>
+                Simpan kode pemulihan sekali pakai: <strong>{recoveryCode}</strong>
+              </p>
+            ) : null}
+            <form onSubmit={disableTwoFactor}>
+              <label className="field">
+                <span>Kode authenticator atau kode pemulihan</span>
+                <input
+                  className="input"
+                  required
+                  value={twoFactorCode}
+                  onChange={(e) => setTwoFactorCode(e.target.value)}
+                  autoComplete="one-time-code"
+                />
+              </label>
+              <label className="field">
+                <span>Password akun</span>
+                <input
+                  className="input"
+                  type="password"
+                  required
+                  value={disablePassword}
+                  onChange={(e) => setDisablePassword(e.target.value)}
+                  autoComplete="current-password"
+                />
+              </label>
+              <button className="btn btn-ghost btn-sm" type="submit" disabled={busy !== ""}>
+                {busy === "2fa-disable" ? "Memproses…" : "Nonaktifkan dua faktor"}
+              </button>
+            </form>
+          </>
+        ) : (
+          <>
+            <p className="small muted" style={{ marginTop: 4 }}>
+              Tambahkan lapisan keamanan dengan kode 6 digit dari aplikasi authenticator.
+            </p>
+            {twoFactorSecret ? (
+              <>
+                <p className="small">
+                  Secret: <code>{twoFactorSecret}</code>
+                </p>
+                {twoFactorUri ? (
+                  <p className="small">
+                    <a href={twoFactorUri}>Buka di aplikasi authenticator</a>
+                  </p>
+                ) : null}
+                <form onSubmit={enableTwoFactor}>
+                  <label className="field">
+                    <span>Kode 6 digit dari aplikasi</span>
+                    <input
+                      className="input"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      required
+                      value={twoFactorCode}
+                      onChange={(e) => setTwoFactorCode(e.target.value)}
+                      autoComplete="one-time-code"
+                    />
+                  </label>
+                  <button className="btn btn-primary btn-sm" type="submit" disabled={busy !== ""}>
+                    {busy === "2fa-enable" ? "Memverifikasi…" : "Aktifkan dua faktor"}
+                  </button>
+                </form>
+              </>
+            ) : (
+              <button className="btn btn-ghost btn-sm" type="button" disabled={busy !== ""} onClick={startTwoFactor}>
+                {busy === "2fa-setup" ? "Menyiapkan…" : "Siapkan dua faktor"}
+              </button>
+            )}
+          </>
+        )}
       </section>
 
       <div className="grid grid-2">

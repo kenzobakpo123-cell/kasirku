@@ -23,6 +23,7 @@ dan pengiriman struk lewat Resend sudah terverifikasi.
 | `NEXT_PUBLIC_MIDTRANS_CLIENT_KEY` | opsional |
 | `MIDTRANS_IS_PRODUCTION` | `false` saat sandbox, `true` saat production |
 | `AGENCY_COMMISSION_RATE` | `0.15` |
+| `ARCJET_KEY` | awalan `ajkey_`; aktifkan Shield/WAF, validasi email, dan rate limit lintas instance. Tanpa key, fallback in-memory dipakai |
 
 4. Deploy. Jalankan migrasi sekali lewat Vercel Shell / lokal yang tersambung ke DB production:
 

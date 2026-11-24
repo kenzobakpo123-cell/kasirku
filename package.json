@@ -19,6 +19,7 @@
     "db:studio": "prisma studio"
   },
   "dependencies": {
+    "@arcjet/next": "^1.16.0",
     "@prisma/client": "^6.0.0",
     "@zxing/browser": "^0.2.1",
     "bcryptjs": "^2.4.3",

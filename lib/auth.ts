@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 
 const ISSUER = "kasirku";
 const AUDIENCE = "kasirku-app";
+const TWO_FACTOR_AUDIENCE = "kasirku-2fa";
 
 export const ACCESS_TOKEN_MAX_AGE = 15 * 60;
 export const REFRESH_TOKEN_MAX_AGE = 30 * 86400;
@@ -29,6 +30,33 @@ export async function signAccessToken(uid: number, tokenVersion = 0, sessionId?:
     .setIssuedAt()
     .setExpirationTime("15m")
     .sign(secret());
+}
+
+/** Token sementara setelah password benar tetapi sebelum kode 2FA diverifikasi. */
+export async function signTwoFactorChallenge(uid: number): Promise<string> {
+  return new SignJWT({})
+    .setProtectedHeader({ alg: "HS256" })
+    .setSubject(String(uid))
+    .setIssuer(ISSUER)
+    .setAudience(TWO_FACTOR_AUDIENCE)
+    .setIssuedAt()
+    .setExpirationTime("5m")
+    .sign(secret());
+}
+
+export async function verifyTwoFactorChallenge(token: string): Promise<number | null> {
+  try {
+    const { payload } = await jwtVerify(token, secret(), {
+      algorithms: ["HS256"],
+      issuer: ISSUER,
+      audience: TWO_FACTOR_AUDIENCE,
+    });
+    if (typeof payload.sub !== "string" || !/^\d+$/.test(payload.sub)) return null;
+    const uid = Number(payload.sub);
+    return Number.isSafeInteger(uid) && uid > 0 ? uid : null;
+  } catch {
+    return null;
+  }
 }
 
 export type Viewer = {

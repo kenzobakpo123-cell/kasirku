@@ -10,6 +10,8 @@ export function AuthForm({ mode, defaultReferral = "" }: { mode: Mode; defaultRe
   const router = useRouter();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [challenge, setChallenge] = useState("");
+  const [code, setCode] = useState("");
   const isRegister = mode === "register";
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -37,9 +39,38 @@ export function AuthForm({ mode, defaultReferral = "" }: { mode: Mode; defaultRe
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
-      const data = (await res.json()) as { error?: string };
+      const data = (await res.json()) as { error?: string; twoFactor?: boolean; challenge?: string };
       if (!res.ok) {
         setError(data.error ?? "Something went wrong. Coba lagi.");
+        return;
+      }
+      if (data.twoFactor && data.challenge) {
+        setChallenge(data.challenge);
+        setCode("");
+        return;
+      }
+      router.push("/dashboard");
+      router.refresh();
+    } catch {
+      setError("Tidak bisa terhubung ke server. Coba lagi.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleTwoFactor(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError("");
+    setLoading(true);
+    try {
+      const res = await fetch("/api/auth/two-factor/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Kasirku-Client": "pwa" },
+        body: JSON.stringify({ challenge, code }),
+      });
+      const data = (await res.json()) as { error?: string };
+      if (!res.ok) {
+        setError(data.error ?? "Kode tidak valid.");
         return;
       }
       router.push("/dashboard");
@@ -79,7 +110,38 @@ export function AuthForm({ mode, defaultReferral = "" }: { mode: Mode; defaultRe
           {isRegister ? "Isi data singkat untuk mulai jualan." : "Lanjutkan ke dashboard toko kamu."}
         </p>
 
-        <form onSubmit={handleSubmit}>
+        {challenge ? (
+          <form onSubmit={handleTwoFactor}>
+            <p className="small muted" style={{ marginTop: 0 }}>
+              Masukkan 6 digit kode dari aplikasi authenticator, atau kode pemulihan sekali pakai.
+            </p>
+            <label className="field">
+              <span>Kode dua faktor</span>
+              <input
+                className="input"
+                name="code"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                autoComplete="one-time-code"
+                required
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+              />
+            </label>
+            <button className="btn btn-primary" type="submit" disabled={loading} style={{ width: "100%" }}>
+              {loading ? "Memverifikasi…" : "Verifikasi & masuk"}
+            </button>
+            <button
+              className="btn btn-ghost btn-sm"
+              type="button"
+              style={{ width: "100%", marginTop: 8 }}
+              onClick={() => { setChallenge(""); setError(""); }}
+            >
+              Kembali
+            </button>
+          </form>
+        ) : (
+          <form onSubmit={handleSubmit}>
           {error ? <div className="error" role="alert">{error}</div> : null}
 
           {isRegister ? (
@@ -123,7 +185,8 @@ export function AuthForm({ mode, defaultReferral = "" }: { mode: Mode; defaultRe
               <Link href="/lupa-password">Lupa password?</Link>
             </p>
           ) : null}
-        </form>
+          </form>
+        )}
 
         <p className="hint">
           {isRegister ? (

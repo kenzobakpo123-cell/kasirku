@@ -1,20 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { protectArcjet } from "@/lib/arcjet";
 import { createEmailToken } from "@/lib/email-tokens";
 import { audit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { resetMail, sendMail } from "@/lib/mail";
-import { clientIp, forbidden, isSameOrigin, rateLimit } from "@/lib/security";
+import { forbidden, isSameOrigin } from "@/lib/security";
 
 const schema = z.object({ email: z.email().max(120).transform((value) => value.toLowerCase()) });
 
 export async function POST(req: NextRequest) {
   if (!isSameOrigin(req)) return forbidden();
-  const limited = rateLimit(`forgot:${clientIp(req) ?? "unknown"}`, 5, 60 * 60_000);
-  if (!limited.allowed) {
+  const guard = await protectArcjet(req, "write");
+  if (guard.denied) {
     return NextResponse.json(
-      { error: `Terlalu banyak permintaan. Coba lagi ${limited.retryAfter} detik.` },
-      { status: 429, headers: { "Retry-After": String(limited.retryAfter) } },
+      { error: guard.error },
+      { status: guard.status, headers: { "Retry-After": String(guard.retryAfter) } },
     );
   }
 

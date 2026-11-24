@@ -1,12 +1,12 @@
 import bcrypt from "bcryptjs";
 import { NextRequest, NextResponse } from "next/server";
-import { REFRESH_TOKEN_MAX_AGE, signAccessToken } from "@/lib/auth";
+import { protectArcjet } from "@/lib/arcjet";
+import { signTwoFactorChallenge } from "@/lib/auth";
+import { issueSession } from "@/lib/auth-session";
 import { audit } from "@/lib/audit";
-import { setAuthCookies, setTenantCookie } from "@/lib/cookies";
 import { db } from "@/lib/db";
-import { clientIp, deviceLabel, forbidden, isSameOrigin, rateLimit, resetRateLimit } from "@/lib/security";
+import { forbidden, isSameOrigin, rateLimit, resetRateLimit } from "@/lib/security";
 import { loginSchema } from "@/lib/schemas";
-import { hashToken, newToken } from "@/lib/tokens";
 
 const WRONG = { error: "Email atau password salah" };
 const DUMMY_HASH = bcrypt.hashSync("kasirku-dummy-password-for-constant-time", 12);
@@ -14,11 +14,11 @@ const DUMMY_HASH = bcrypt.hashSync("kasirku-dummy-password-for-constant-time", 1
 export async function POST(req: NextRequest) {
   if (!isSameOrigin(req)) return forbidden();
 
-  const perIp = rateLimit(`login-ip:${clientIp(req) ?? "unknown"}`, 30, 60_000);
-  if (!perIp.allowed) {
+  const guard = await protectArcjet(req, "login");
+  if (guard.denied) {
     return NextResponse.json(
-      { error: `Terlalu banyak percobaan. Coba lagi ${perIp.retryAfter} detik.` },
-      { status: 429, headers: { "Retry-After": String(perIp.retryAfter) } },
+      { error: guard.error },
+      { status: guard.status, headers: { "Retry-After": String(guard.retryAfter) } },
     );
   }
 
@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
 
   const user = await db.user.findUnique({
     where: { email },
-    select: { id: true, name: true, email: true, passwordHash: true, tokenVersion: true },
+    select: { id: true, name: true, tokenVersion: true, passwordHash: true, twoFactorEnabled: true },
   });
   const valid = await bcrypt.compare(password, user?.passwordHash ?? DUMMY_HASH);
   if (!user || !valid) {
@@ -60,30 +60,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Akun belum memiliki toko. Hubungi administrator." }, { status: 403 });
   }
 
-  const refreshToken = newToken();
-  const now = new Date();
-  const session = await db.session.create({
-    data: {
-      userId: user.id,
-      tokenHash: hashToken(refreshToken),
-      label: deviceLabel(req.headers.get("user-agent")).slice(0, 191),
-      ip: clientIp(req),
-      expiresAt: new Date(now.getTime() + REFRESH_TOKEN_MAX_AGE * 1000),
-    },
-    select: { id: true },
-  });
+  if (user.twoFactorEnabled) {
+    const challenge = await signTwoFactorChallenge(user.id);
+    void audit({ action: "LOGIN_2FA_REQUIRED", userId: user.id, req });
+    return NextResponse.json({ twoFactor: true, challenge });
+  }
 
-  const token = await signAccessToken(user.id, user.tokenVersion, session.id);
-  const res = NextResponse.json({ ok: true, name: user.name, tenantId: membership.tenantId });
-  setAuthCookies(res, token, refreshToken);
-  setTenantCookie(res, membership.tenantId);
-  void audit({
-    action: "LOGIN_SUCCESS",
-    userId: user.id,
-    tenantId: membership.tenantId,
-    entity: "Session",
-    entityId: session.id,
-    req,
-  });
+  const res = await issueSession(user, req);
+  if (!res) return NextResponse.json({ error: "Akun belum memiliki toko. Hubungi administrator." }, { status: 403 });
   return res;
 }
