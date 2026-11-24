@@ -75,7 +75,7 @@ Di `/kasir`, bagian **Member & struk email** berisi dua kolom: **Cari / email me
 
 Halaman `/member` menampilkan semua member dengan pencarian nama/email, jumlah transaksi, total belanja, dan kunjungan terakhir. Member juga bisa ditambah atau diubah manual di sana. Menghapus member tidak menghapus riwayat transaksinya.
 
-Pengiriman terjadi dari server setelah transaksi berhasil lewat Resend, sehingga kasir tidak perlu menyalin atau membagikan manual. Kegagalan pengiriman tidak membatalkan penjualan; status dan alasannya tampil di kartu struk dan tombol **Kirim ulang struk** tersedia. Tanpa `RESEND_API_KEY`, development mencatat isi email di log server supaya alur tetap bisa diuji; di production variabel ini wajib diisi.
+Pengiriman terjadi dari server setelah transaksi berhasil lewat Resend, sehingga kasir tidak perlu menyalin atau membagikan manual. Kegagalan pengiriman tidak membatalkan penjualan; status dan alasannya tampil di kartu struk dan tombol **Kirim ulang struk** tersedia. Tanpa `RESEND_API_KEY`, development mencatat isi email di log server supaya alur tetap bisa diuji; di production variabel ini wajib diisi. Panduan mendapatkan API key dan verified domain ada di [`docs/DEPLOY.md`](DEPLOY.md#mengaktifkan-email-sungguhan-resend).
 
 ## 5. Ringkasan untuk demo
 

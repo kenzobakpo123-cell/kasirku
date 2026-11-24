@@ -37,6 +37,25 @@ https://kasirku.vercel.app/api/billing/midtrans/webhook
 
 > Catatan: `output: "standalone"` aman di Vercel; Vercel tetap memakai builder-nya sendiri.
 
+### Mengaktifkan email sungguhan (Resend)
+
+Tanpa `RESEND_API_KEY`, development hanya mencatat isi email di terminal dengan awalan `[Kasirku mail dev]`.
+Agar struk, verifikasi email, dan reset password benar-benar masuk ke inbox:
+
+1. Daftar di <https://resend.com>, buka **API Keys**, buat key dengan akses **Sending**, lalu salin nilai `re_...`.
+2. Buka **Domains**, tambahkan domain milikmu, pasang record DNS SPF/DKIM/DMARC yang diberikan Resend, dan tunggu statusnya **Verified**.
+3. Isi `.env` lokal atau Environment Variables di Vercel:
+
+```env
+RESEND_API_KEY=re_kunci_dari_resend
+EMAIL_FROM="Kasirku <halo@domainkamu.com>"
+```
+
+4. Restart `npm run dev` atau redeploy agar env terbaca.
+5. Uji transaksi di `/kasir`. Status harus berubah menjadi **Struk otomatis terkirim ke email pembeli**, dan log server tidak lagi menampilkan `[Kasirku mail dev]`.
+
+Untuk coba cepat tanpa domain, pakai `EMAIL_FROM="Kasirku <onboarding@resend.dev>"`. Resend hanya mengirim dari alamat itu ke email yang dipakai saat mendaftar Resend; untuk alamat pembeli apa pun, domain terverifikasi wajib.
+
 ## Opsi B — VPS + Docker Compose
 
 Butuh Docker Engine + Docker Compose plugin. Copy `.env.example` ke `.env`, isi semua variabel, lalu:
