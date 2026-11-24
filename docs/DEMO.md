@@ -52,15 +52,17 @@ Buka `/produk` → “Import dari CSV”, unduh contoh, lalu import. Buka `/akun
 ganti password (perangkat lain otomatis dicabut).
 
 ### 11. Barcode & email (1 menit)
-Di `/kasir`, klik “Scan barcode” (Chrome/Edge dengan `BarcodeDetector`), atau tetap pakai kolom SKU.
+Di `/produk`, klik **Label** pada Kopi Americano untuk membuka barcode CODE128-nya. Cetak atau tampilkan di HP kedua.
+Kembali ke `/kasir`, klik **Scan barcode**, arahkan kamera ke label — produk langsung masuk keranjang. Browser tanpa
+`BarcodeDetector` otomatis memakai fallback ZXing; input SKU manual tetap tersedia.
 Daftarkan akun baru di `/register` — tanpa `RESEND_API_KEY`, response register memuat `devVerifyUrl` untuk langsung mencoba verifikasi. Coba juga `/lupa-password`.
 
 ### 12. Midtrans (opsional, 1 menit)
 Isi kredensial sandbox `.env`, buka `/tagihan` → “Bayar otomatis (Midtrans)”. Tekankan webhook terverifikasi
-dan aktivasi paket yang idempoten. Tanpa kredensial, alur transfer manual tetap tampil.
+dan aktivasi paket yang idempoten. Tanpa kredensial, alur transfer manual tetap tampil dan bisa dibuktikan sampai paket aktif.
 
 ## Penutup (30 detik)
-“Satu produk, dua pembayaran: langganan outlet + komisi agensi. MVP sudah jalan; Midtrans dan barcode kamera masuk roadmap.”
+“Satu produk, dua pembayaran: langganan outlet + komisi agensi. Kasir, stok, barcode, Midtrans, dan verifikasi webhook sudah berjalan.”
 
 ## Reset data
 `npm run db:seed` menghapus data demo dan mengisinya ulang.

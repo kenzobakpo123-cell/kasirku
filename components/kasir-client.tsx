@@ -63,8 +63,7 @@ export function KasirClient() {
   const [scanning, setScanning] = useState(false);
   const [scanError, setScanError] = useState("");
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const scanFrameRef = useRef<number | null>(null);
+  const scanStopRef = useRef<(() => void) | null>(null);
   const flushing = useRef(false);
 
   const load = useCallback(async () => {
@@ -118,10 +117,9 @@ export function KasirClient() {
   }, []);
 
   function stopScan() {
-    if (scanFrameRef.current !== null) cancelAnimationFrame(scanFrameRef.current);
-    scanFrameRef.current = null;
-    streamRef.current?.getTracks().forEach((track) => track.stop());
-    streamRef.current = null;
+    const stop = scanStopRef.current;
+    scanStopRef.current = null;
+    stop?.();
     if (videoRef.current) videoRef.current.srcObject = null;
     setScanning(false);
   }
@@ -142,8 +140,8 @@ export function KasirClient() {
     window.addEventListener("online", onOnline);
     return () => {
       window.removeEventListener("online", onOnline);
-      if (scanFrameRef.current !== null) cancelAnimationFrame(scanFrameRef.current);
-      streamRef.current?.getTracks().forEach((track) => track.stop());
+      scanStopRef.current?.();
+      scanStopRef.current = null;
     };
   }, [flush]);
 
@@ -184,55 +182,82 @@ export function KasirClient() {
     setCart((state) => ({ ...state, [product.id]: current + 1 }));
   }
 
+  function handleScannedCode(rawValue: string) {
+    const raw = rawValue.trim();
+    if (!raw) return;
+
+    const match = products.find(
+      (product) => (product.sku ?? "").toUpperCase() === raw.toUpperCase() || String(product.id) === raw,
+    );
+    setQuery(raw);
+    if (match) {
+      setError("");
+      add(match);
+    } else {
+      setError(`Barcode ${raw} belum terdaftar sebagai SKU produk.`);
+    }
+    stopScan();
+  }
+
   async function startScan() {
     setScanError("");
-    const detector = barcodeDetector();
-    if (!detector) {
-      setScanError("Browser ini belum mendukung BarcodeDetector. Tetap bisa cari/manual input SKU di kolom pencarian.");
-      return;
-    }
+    setError("");
     if (!navigator.mediaDevices?.getUserMedia) {
       setScanError("Kamera tidak tersedia. Gunakan input SKU manual.");
       return;
     }
 
+    const detector = barcodeDetector();
+    const constraints: MediaStreamConstraints = {
+      video: { facingMode: { ideal: "environment" } },
+      audio: false,
+    };
+
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: "environment" } },
-        audio: false,
-      });
-      streamRef.current = stream;
       setScanning(true);
       const video = videoRef.current;
-      if (video) {
+      if (!video) throw new Error("Video scanner belum siap.");
+
+      if (detector) {
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
         video.srcObject = stream;
         await video.play();
+
+        let frame = 0;
+        let stopped = false;
+        const tick = async () => {
+          if (stopped || !video.srcObject) return;
+          try {
+            const codes = await detector.detect(video);
+            const raw = codes[0]?.rawValue;
+            if (raw) {
+              handleScannedCode(raw);
+              return;
+            }
+          } catch {
+            // Frame kadang gagal saat kamera masih fokus; lanjutkan frame berikutnya.
+          }
+          frame = requestAnimationFrame(() => void tick());
+        };
+        scanStopRef.current = () => {
+          stopped = true;
+          if (frame) cancelAnimationFrame(frame);
+          stream.getTracks().forEach((track) => track.stop());
+        };
+        frame = requestAnimationFrame(() => void tick());
+        return;
       }
 
-      const tick = async () => {
-        if (!video || !streamRef.current) return;
-        try {
-          const codes = await detector.detect(video);
-          const raw = codes[0]?.rawValue?.trim();
-          if (raw) {
-            const match = products.find(
-              (product) => (product.sku ?? "").toUpperCase() === raw.toUpperCase() || String(product.id) === raw,
-            );
-            setQuery(raw);
-            if (match) add(match);
-            else setError(`Barcode ${raw} belum terdaftar sebagai SKU produk.`);
-            stopScan();
-            return;
-          }
-        } catch {
-          // Frame kadang gagal saat kamera masih fokus; lanjutkan frame berikutnya.
-        }
-        scanFrameRef.current = requestAnimationFrame(() => void tick());
-      };
-      scanFrameRef.current = requestAnimationFrame(() => void tick());
+      // Fallback lintas browser: ZXing dimuat hanya saat scanner dipakai.
+      const { BrowserMultiFormatReader } = await import("@zxing/browser");
+      const reader = new BrowserMultiFormatReader();
+      const controls = await reader.decodeFromConstraints(constraints, video, (result) => {
+        if (result) handleScannedCode(result.getText());
+      });
+      scanStopRef.current = () => controls.stop();
     } catch {
-      setScanError("Akses kamera ditolak. Gunakan input SKU manual.");
       stopScan();
+      setScanError("Akses kamera ditolak atau scanner gagal dipasang. Gunakan input SKU manual.");
     }
   }
 
@@ -392,12 +417,10 @@ export function KasirClient() {
               {scanning ? "Hentikan scan" : "Scan barcode"}
             </button>
           </div>
-          {scanning ? (
-            <div style={{ marginBottom: 14 }}>
-              <video ref={videoRef} playsInline muted style={{ width: "100%", maxHeight: 240, borderRadius: 10, background: "#000" }} />
-              <p className="small muted">Arahkan kamera ke barcode/SKU produk.</p>
-            </div>
-          ) : null}
+          <div style={{ display: scanning ? "block" : "none", marginBottom: 14 }}>
+            <video ref={videoRef} playsInline muted style={{ width: "100%", maxHeight: 240, borderRadius: 10, background: "#000" }} />
+            <p className="small muted">Arahkan kamera ke barcode produk. Kamera berhenti otomatis setelah terbaca.</p>
+          </div>
           {scanError ? <p className="small" style={{ color: "var(--warn)", marginTop: -6 }}>{scanError}</p> : null}
           {loading ? (
             <p className="empty">Memuat…</p>

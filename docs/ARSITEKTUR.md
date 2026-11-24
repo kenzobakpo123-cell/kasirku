@@ -45,9 +45,9 @@ Dashboard agensi menjumlahkan penjualan lintas tenant dan menghitung komisi dari
 
 ## Billing
 
-Pembayaran masih manual (transfer + bukti + verifikasi admin) supaya MVP bisa dijual tanpa gateway.
+Pembayaran manual (transfer + bukti + verifikasi admin) tetap tersedia supaya bisa dijual tanpa gateway.
 Approve oleh admin meng-upgrade `Subscription` dalam transaksi yang sama dengan perubahan status `Payment`.
-Midtrans direncanakan sebagai pengganti alur manual tanpa mengubah model `Payment`.
+Midtrans Snap memakai model `Payment` yang sama dan webhook terverifikasi sebagai jalur otomatis.
 
 ## Offline-first
 
@@ -81,9 +81,20 @@ Reset password menaikkan `tokenVersion` dan mencabut semua sesi aktif dalam satu
 kosong dan masih development, link dikembalikan di response (`devUrl`) dan dicatat di log untuk keperluan testing;
 di production email wajib dikonfigurasi.
 
+## Barcode & pembayaran
+
+Scanner kasir memakai `BarcodeDetector` bawaan Chrome/Edge bila tersedia; bila tidak, modul `@zxing/browser`
+dimuat secara dinamis hanya saat tombol scanner ditekan. Kamera dihentikan lewat satu `scanStopRef` yang sama
+untuk kedua jalur, termasuk saat komponen unmount. Label CODE128 dihasilkan di server oleh `bwip-js` pada route
+`/api/products/[id]/barcode` dan dibatasi ke tenant aktif, sehingga SKU toko lain tidak bisa diintip.
+
+Pembayaran manual dan Midtrans keduanya menulis row `Payment`. Aktivasi paket hanya terjadi di admin review
+(transfer) atau webhook Midtrans yang terverifikasi; keduanya memakai transaksi database dan mengubah `Payment`
+hanya dari `PENDING`. Webhook juga mengecek ulang status ke API Midtrans dan membandingkan nominal sebelum
+mengaktifkan langganan, sehingga notifikasi palsu tidak bisa mengubah paket.
+
 ## Tradeoff yang disengaja
 
-- Belum ada email verifikasi / reset password (direncanakan)
 - Rate limit masih in-memory, bukan Redis
-- Barcode memakai input SKU (kompatibel dengan scanner hardware); BarcodeDetector kamera menyusul
+- Barcode kamera butuh `localhost` atau HTTPS; input SKU manual tetap tersedia untuk scanner hardware
 - Prisma 6 dipertahankan agar konsisten dengan project ke-1

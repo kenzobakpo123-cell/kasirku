@@ -26,7 +26,7 @@ Pembeli langsung: **agensi / freelancer** yang melayani UMKM. Pengguna akhir: **
 7. Billing manual (transfer + verifikasi) **atau otomatis** lewat Midtrans Snap (QRIS/VA/kartu)
 8. Import produk CSV, akun & keamanan (sesi perangkat, ganti password)
 
-**Roadmap:** verifikasi email, barcode scanner kamera, purchase order supplier, deploy.
+**Roadmap:** purchase order supplier, video demo final, deploy production.
 
 ## Arsitektur (rencana)
 
@@ -92,15 +92,16 @@ mengonfirmasi status ke API Midtrans sebelum mengaktifkan paket, jadi tidak bisa
 - [x] Akun & keamanan: sesi perangkat + cabut akses, ganti password mencabut sesi lain
 - [x] Midtrans Snap (checkout + webhook terverifikasi + aktivasi paket idempoten)
 - [x] Email verifikasi + lupa/reset password (token di-hash, sekali pakai, Resend)
-- [x] Barcode scanner kamera (BarcodeDetector) dengan fallback input SKU
+- [x] Barcode scanner kamera (BarcodeDetector + fallback ZXing) + label CODE128 per produk
 - [x] CI GitHub Actions (typecheck, lint, test, build)
 - [x] Dockerfile + docker-compose produksi + panduan Vercel
 - [x] Naskah video demo 3 menit
-- [x] 51 unit test, lint, typecheck, build hijau (44 route) + robots/sitemap
+- [x] 52 unit test, lint, typecheck, build hijau (44 route) + robots/sitemap
 - [ ] Video demo final & deploy production
 
-Panduan demo: [`docs/DEMO.md`](docs/DEMO.md). Catatan teknis: [`docs/ARSITEKTUR.md`](docs/ARSITEKTUR.md).
-Deploy: [`docs/DEPLOY.md`](docs/DEPLOY.md). Naskah video: [`docs/VIDEO.md`](docs/VIDEO.md).
+Cara kerja: [`docs/CARA-KERJA.md`](docs/CARA-KERJA.md). Panduan demo: [`docs/DEMO.md`](docs/DEMO.md).
+Catatan teknis: [`docs/ARSITEKTUR.md`](docs/ARSITEKTUR.md). Deploy: [`docs/DEPLOY.md`](docs/DEPLOY.md).
+Naskah video: [`docs/VIDEO.md`](docs/VIDEO.md).
 
 ## Catatan
 

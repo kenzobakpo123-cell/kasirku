@@ -316,6 +316,17 @@ export function ProductsClient() {
                       <button className="btn btn-ghost btn-sm" type="button" disabled={saving} onClick={() => restock(product)}>
                         + Stok
                       </button>{" "}
+                      {product.sku ? (
+                        <a
+                          className="btn btn-ghost btn-sm"
+                          href={`/api/products/${product.id}/barcode`}
+                          target="_blank"
+                          rel="noreferrer"
+                          title={`Cetak label barcode ${product.sku}`}
+                        >
+                          Label
+                        </a>
+                      ) : null}{" "}
                       <button className="btn btn-ghost btn-sm" type="button" onClick={() => startEdit(product)}>
                         Ubah
                       </button>{" "}

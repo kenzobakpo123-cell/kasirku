@@ -45,10 +45,10 @@ async function createTenant({ name, slug, ownerId, plan = "FREE", role = "OWNER"
   return tenant;
 }
 
-async function addProduct(tenantId, name, price, cost, stock, minStock) {
+async function addProduct(tenantId, name, price, cost, stock, minStock, sku) {
   return db.product.create({
-    data: { tenantId, name, price, cost, stock, minStock },
-    select: { id: true, name: true, price: true, cost: true, stock: true },
+    data: { tenantId, name, price, cost, stock, minStock, sku },
+    select: { id: true, name: true, sku: true, price: true, cost: true, stock: true },
   });
 }
 
@@ -137,12 +137,12 @@ async function main() {
   }
 
   const kopiProducts = [
-    await addProduct(kopi.id, "Kopi Americano", 18000, 6000, 40, 10),
-    await addProduct(kopi.id, "Kopi Latte", 22000, 8000, 30, 10),
-    await addProduct(kopi.id, "Croissant", 15000, 5000, 18, 5),
-    await addProduct(kopi.id, "Teh Hangat", 8000, 2000, 25, 5),
+    await addProduct(kopi.id, "Kopi Americano", 18000, 6000, 40, 10, "KS-AMER-001"),
+    await addProduct(kopi.id, "Kopi Latte", 22000, 8000, 30, 10, "KS-LATE-002"),
+    await addProduct(kopi.id, "Croissant", 15000, 5000, 18, 5, "KS-CROI-003"),
+    await addProduct(kopi.id, "Teh Hangat", 8000, 2000, 25, 5, "KS-TEH-004"),
   ];
-  await addProduct(kopi.id, "Kue Coklat", 12000, 4000, 3, 5);
+  await addProduct(kopi.id, "Kue Coklat", 12000, 4000, 3, 5, "KS-KUE-005");
 
   for (const [index, daysAgo] of [0, 0, 1, 2, 3, 5, 8, 12].entries()) {
     await addSale({
@@ -159,9 +159,9 @@ async function main() {
   }
 
   const bajuProducts = [
-    await addProduct(baju.id, "Kaos Polos", 65000, 35000, 24, 6),
-    await addProduct(baju.id, "Kemeja Flanel", 129000, 75000, 12, 4),
-    await addProduct(baju.id, "Tote Bag", 45000, 20000, 2, 5),
+    await addProduct(baju.id, "Kaos Polos", 65000, 35000, 24, 6, "BR-KAOS-001"),
+    await addProduct(baju.id, "Kemeja Flanel", 129000, 75000, 12, 4, "BR-FLAN-002"),
+    await addProduct(baju.id, "Tote Bag", 45000, 20000, 2, 5, "BR-TOTE-003"),
   ];
   await addSale({
     tenantId: baju.id,
