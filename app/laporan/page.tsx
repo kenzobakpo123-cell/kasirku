@@ -96,7 +96,7 @@ export default async function ReportPage({ searchParams }: { searchParams: Promi
 
       <div className="grid grid-2" style={{ marginTop: 18 }}>
         <section className="card">
-          <h2 style={{ fontSize: 18 }}>Penjualan harian</h2>
+          <h2 className="section-title">Penjualan harian</h2>
           {sales.length === 0 ? (
             <p className="empty">Tidak ada transaksi pada rentang ini.</p>
           ) : (
@@ -130,7 +130,7 @@ export default async function ReportPage({ searchParams }: { searchParams: Promi
         </section>
 
         <section className="card">
-          <h2 style={{ fontSize: 18 }}>Produk terlaris</h2>
+          <h2 className="section-title">Produk terlaris</h2>
           {bestSellers.length === 0 ? (
             <p className="empty">Belum ada penjualan.</p>
           ) : (
@@ -151,7 +151,7 @@ export default async function ReportPage({ searchParams }: { searchParams: Promi
             </table>
           )}
 
-          <h2 style={{ fontSize: 18, marginTop: 24 }}>Stok menipis</h2>
+          <h2 className="section-title" style={{ marginTop: 24 }}>Stok menipis</h2>
           {lowStock.length === 0 ? (
             <p className="empty">Semua stok aman.</p>
           ) : (

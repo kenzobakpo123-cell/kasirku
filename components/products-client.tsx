@@ -207,7 +207,7 @@ export function ProductsClient() {
       <div className="grid grid-2">
         <section className="card">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <h2 style={{ fontSize: 18 }}>{editing ? `Ubah: ${editing.name}` : "Tambah produk"}</h2>
+            <h2 className="section-title">{editing ? `Ubah: ${editing.name}` : "Tambah produk"}</h2>
             {editing ? (
               <button className="btn btn-ghost btn-sm" type="button" onClick={cancelEdit}>Batal</button>
             ) : null}
@@ -284,7 +284,7 @@ export function ProductsClient() {
         </section>
 
         <section className="card">
-          <h2 style={{ fontSize: 18 }}>Daftar produk ({products.length})</h2>
+          <h2 className="section-title">Daftar produk ({products.length})</h2>
           {loading ? (
             <p className="empty">Memuat…</p>
           ) : products.length === 0 ? (

@@ -52,7 +52,7 @@ Buka `/produk` → “Import dari CSV”, unduh contoh, lalu import. Buka `/akun
 ganti password (perangkat lain otomatis dicabut).
 
 ### 11. Barcode & email (1 menit)
-Di `/kasir`, klik “📷 Scan barcode” (Chrome/Edge dengan `BarcodeDetector`), atau tetap pakai kolom SKU.
+Di `/kasir`, klik “Scan barcode” (Chrome/Edge dengan `BarcodeDetector`), atau tetap pakai kolom SKU.
 Daftarkan akun baru di `/register` — tanpa `RESEND_API_KEY`, response register memuat `devVerifyUrl` untuk langsung mencoba verifikasi. Coba juga `/lupa-password`.
 
 ### 12. Midtrans (opsional, 1 menit)

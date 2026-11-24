@@ -118,7 +118,7 @@ export function TeamClient({
 
       <div className="grid grid-2">
         <section className="card">
-          <h2 style={{ fontSize: 18 }}>Anggota tim ({members.length})</h2>
+          <h2 className="section-title">Anggota tim ({members.length})</h2>
           {allowedRoles.length > 0 ? (
             <form onSubmit={addMember} style={{ marginBottom: 18 }}>
               <label className="field">
@@ -191,7 +191,7 @@ export function TeamClient({
         </section>
 
         <section className="card">
-          <h2 style={{ fontSize: 18 }}>Outlet ({outlets.length})</h2>
+          <h2 className="section-title">Outlet ({outlets.length})</h2>
           <ul className="small" style={{ paddingLeft: 18 }}>
             {outlets.map((outlet) => (
               <li key={outlet.id} style={{ marginBottom: 6 }}>

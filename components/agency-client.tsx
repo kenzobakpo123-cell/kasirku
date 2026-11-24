@@ -99,7 +99,7 @@ export function AgencyClient({
 
       <div className="grid grid-2" style={{ marginTop: 18 }}>
         <section className="card">
-          <h2 style={{ fontSize: 18 }}>Kode referral</h2>
+          <h2 className="section-title">Kode referral</h2>
           <div className="toolbar">
             <label className="field" style={{ marginBottom: 0 }}>
               <span>Komisi (%)</span>
@@ -151,7 +151,7 @@ export function AgencyClient({
         </section>
 
         <section className="card">
-          <h2 style={{ fontSize: 18 }}>Klien & komisi</h2>
+          <h2 className="section-title">Klien & komisi</h2>
           {summary.tenants.length === 0 ? (
             <p className="empty">Belum ada toko klien. Bagikan kode referral dulu.</p>
           ) : (

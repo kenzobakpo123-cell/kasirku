@@ -318,7 +318,7 @@ export function KasirClient() {
 
   const waText = receipt
     ? [
-        "🧾 *Struk Kasirku*",
+        "*Struk Kasirku*",
         receipt.number,
         "",
         ...receipt.items.map((item) => `${item.qty}× ${item.name} — ${rupiah(item.subtotal)}`),
@@ -326,7 +326,7 @@ export function KasirClient() {
         `Total: ${rupiah(receipt.total)}`,
         `Dibayar: ${rupiah(receipt.paid)}`,
         `Kembalian: ${rupiah(receipt.change)}`,
-        "Terima kasih sudah belanja 🙏",
+        "Terima kasih sudah belanja di Kasirku.",
       ].join("\n")
     : "";
   const waHref = `https://wa.me/?text=${encodeURIComponent(waText)}`;
@@ -350,7 +350,7 @@ export function KasirClient() {
 
       {receipt ? (
         <div className="card receipt-print" style={{ marginBottom: 18, borderColor: "var(--ok)" }}>
-          <h2 style={{ fontSize: 18 }}>✅ Transaksi berhasil</h2>
+          <h2 className="section-title">Transaksi berhasil</h2>
           <p className="small muted">{receipt.number}</p>
           {receipt.items.map((item) => (
             <div className="cart-row" key={item.name}>
@@ -365,10 +365,10 @@ export function KasirClient() {
           <p className="small">Dibayar {rupiah(receipt.paid)} · Kembalian <strong>{rupiah(receipt.change)}</strong></p>
           <div className="toolbar" style={{ margin: 0 }}>
             <button className="btn btn-ghost btn-sm no-print" type="button" onClick={() => window.print()}>
-              🖨 Cetak struk
+              Cetak struk
             </button>
             <a className="btn btn-ghost btn-sm no-print" href={waHref} target="_blank" rel="noreferrer">
-              💬 Kirim via WhatsApp
+              Kirim via WhatsApp
             </a>
             <button className="btn btn-ghost btn-sm no-print" type="button" onClick={() => setReceipt(null)}>
               Tutup
@@ -379,7 +379,7 @@ export function KasirClient() {
 
       <div className="grid grid-2">
         <section className="card">
-          <h2 style={{ fontSize: 18 }}>Produk</h2>
+          <h2 className="section-title">Produk</h2>
           <div className="toolbar" style={{ marginBottom: 14 }}>
             <input
               className="input"
@@ -389,7 +389,7 @@ export function KasirClient() {
               style={{ flex: 1, marginBottom: 0 }}
             />
             <button className="btn btn-ghost btn-sm" type="button" onClick={scanning ? stopScan : () => void startScan()}>
-              {scanning ? "⏹ Hentikan scan" : "📷 Scan barcode"}
+              {scanning ? "Hentikan scan" : "Scan barcode"}
             </button>
           </div>
           {scanning ? (
@@ -435,7 +435,7 @@ export function KasirClient() {
         </section>
 
         <section className="card">
-          <h2 style={{ fontSize: 18 }}>Keranjang</h2>
+          <h2 className="section-title">Keranjang</h2>
           {lines.length === 0 ? (
             <p className="empty">Belum ada item.</p>
           ) : (

@@ -39,7 +39,7 @@ export default async function DashboardPage() {
     <AppShell viewer={viewer} memberships={memberships} activeTenantId={tenantId} isAgency={isAgency} isAdmin={isAdmin}>
       <div className="page-head">
         <div>
-          <h1>Halo, {viewer.name.split(" ")[0]} 👋</h1>
+          <h1>Halo, {viewer.name.split(" ")[0]}</h1>
           <p>Ringkasan toko hari ini.</p>
         </div>
         <Link href="/kasir" className="btn btn-primary">
@@ -73,9 +73,9 @@ export default async function DashboardPage() {
 
       <div className="grid grid-2" style={{ marginTop: 18 }}>
         <section className="card">
-          <h2 style={{ fontSize: 18 }}>Stok menipis</h2>
+          <h2 className="section-title">Stok menipis</h2>
           {lowStock.length === 0 ? (
-            <p className="empty">Semua stok aman. 🎉</p>
+            <p className="empty">Semua stok dalam batas aman.</p>
           ) : (
             <table>
               <thead>
@@ -101,7 +101,7 @@ export default async function DashboardPage() {
         </section>
 
         <section className="card">
-          <h2 style={{ fontSize: 18 }}>Transaksi terakhir</h2>
+          <h2 className="section-title">Transaksi terakhir</h2>
           {recentSales.length === 0 ? (
             <p className="empty">Belum ada transaksi. Mulai dari kasir.</p>
           ) : (

@@ -119,7 +119,7 @@ export function BillingClient({
 
       <div className="grid grid-2">
         <section className="card">
-          <h2 style={{ fontSize: 18 }}>Paket saat ini: {plan}</h2>
+          <h2 className="section-title">Paket saat ini: {plan}</h2>
           <table>
             <tbody>
               <tr><td>Outlet</td><td className="num">{limits.outlets}</td></tr>
@@ -133,7 +133,7 @@ export function BillingClient({
         </section>
 
         <section className="card">
-          <h2 style={{ fontSize: 18 }}>Ajukan upgrade</h2>
+          <h2 className="section-title">Ajukan upgrade</h2>
           <label className="field">
             <span>Paket</span>
             <select className="input" value={selected} onChange={(event) => setSelected(event.target.value as "PRO" | "AGENCY")}>
@@ -172,7 +172,7 @@ export function BillingClient({
       </div>
 
       <section className="card" style={{ marginTop: 18 }}>
-        <h2 style={{ fontSize: 18 }}>Riwayat pembayaran</h2>
+        <h2 className="section-title">Riwayat pembayaran</h2>
         {payments.length === 0 ? (
           <p className="empty">Belum ada pengajuan.</p>
         ) : (

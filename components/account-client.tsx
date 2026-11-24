@@ -117,7 +117,7 @@ export function AccountClient({
       <section className="card" id="verifikasi" style={{ marginBottom: 18 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
           <div>
-            <h2 style={{ fontSize: 18, margin: 0 }}>Verifikasi email</h2>
+            <h2 className="section-title">Verifikasi email</h2>
             <p className="small muted" style={{ margin: "4px 0 0" }}>
               {emailVerifiedAt ? "Email kamu sudah terverifikasi." : `Belum terverifikasi untuk ${email}.`}
             </p>
@@ -134,7 +134,7 @@ export function AccountClient({
 
       <div className="grid grid-2">
         <section className="card">
-          <h2 style={{ fontSize: 18 }}>Ganti password</h2>
+          <h2 className="section-title">Ganti password</h2>
           <form onSubmit={changePassword}>
             <label className="field">
               <span>Password saat ini</span>
@@ -158,7 +158,7 @@ export function AccountClient({
         </section>
 
         <section className="card">
-          <h2 style={{ fontSize: 18 }}>Perangkat aktif ({sessions.length})</h2>
+          <h2 className="section-title">Perangkat aktif ({sessions.length})</h2>
           {sessions.length === 0 ? (
             <p className="empty">Tidak ada sesi aktif.</p>
           ) : (
