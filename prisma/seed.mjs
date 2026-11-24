@@ -116,7 +116,7 @@ async function addSale({ tenantId, cashierId, products, lines, discount, daysAgo
         },
       });
     }
-  });
+  }, { timeout: 30000 });
 }
 
 async function main() {

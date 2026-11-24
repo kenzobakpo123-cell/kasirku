@@ -6,12 +6,12 @@
 
 */
 -- AlterTable
-ALTER TABLE `sale` DROP COLUMN `customerPhone`,
+ALTER TABLE `Sale` DROP COLUMN `customerPhone`,
     ADD COLUMN `customerId` INTEGER NULL;
 
 -- Kanal struk sekarang email saja; data lama tetap bisa dibaca.
-UPDATE `sale` SET `receiptChannel` = 'EMAIL' WHERE `receiptChannel` IN ('WHATSAPP', 'BOTH');
-ALTER TABLE `sale` MODIFY `receiptChannel` ENUM('NONE', 'EMAIL') NOT NULL DEFAULT 'NONE';
+UPDATE `Sale` SET `receiptChannel` = 'EMAIL' WHERE `receiptChannel` IN ('WHATSAPP', 'BOTH');
+ALTER TABLE `Sale` MODIFY `receiptChannel` ENUM('NONE', 'EMAIL') NOT NULL DEFAULT 'NONE';
 
 -- CreateTable
 CREATE TABLE `Customer` (
