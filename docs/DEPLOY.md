@@ -3,6 +3,8 @@
 Dua jalur: **Vercel + MySQL cloud** (paling cepat) atau **VPS/Docker** (kontrol penuh).
 Repo produksi: <https://github.com/kenzobakpo123-cell/kasirku>. Project Vercel: `kasirku` (team `kafa10`),
 di-import dari repo tersebut. Deploy otomatis terjadi setiap push ke `main`.
+Deploy produksi aktif: <https://kasirku-psi-two.vercel.app> dengan MySQL Railway (database `kasirku`)
+dan pengiriman struk lewat Resend sudah terverifikasi.
 
 ## Opsi A — Vercel
 
@@ -14,7 +16,7 @@ di-import dari repo tersebut. Deploy otomatis terjadi setiap push ke `main`.
 |---|---|
 | `DATABASE_URL` | `mysql://user:pass@host:3306/kasirku` |
 | `JWT_SECRET` | string acak 48 byte: `node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"` |
-| `NEXT_PUBLIC_APP_URL` | `https://kasirku.vercel.app` |
+| `NEXT_PUBLIC_APP_URL` | `https://kasirku-psi-two.vercel.app` |
 | `RESEND_API_KEY` | opsional di development, **wajib di production** untuk verifikasi, reset password, dan struk email |
 | `EMAIL_FROM` | `Kasirku <halo@domainkamu.com>` (domain terverifikasi di Resend) |
 | `MIDTRANS_SERVER_KEY` | opsional; kosongkan untuk transfer manual |
@@ -32,7 +34,7 @@ npm run db:seed   # opsional, HANYA untuk demo
 5. Di dashboard Midtrans, pasang webhook:
 
 ```
-https://kasirku.vercel.app/api/billing/midtrans/webhook
+https://kasirku-psi-two.vercel.app/api/billing/midtrans/webhook
 ```
 
 6. Cek: `/`, `/login`, `/register`, `/robots.txt`, `/sitemap.xml`, dan `GET /api/health` harus mengembalikan `{"ok":true}`.

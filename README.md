@@ -101,7 +101,8 @@ mengonfirmasi status ke API Midtrans sebelum mengaktifkan paket, jadi tidak bisa
 - [x] Dockerfile + docker-compose produksi + panduan Vercel
 - [x] Naskah video demo 3 menit
 - [x] 59 unit test, lint, typecheck, build hijau + robots/sitemap
-- [ ] Video demo final & deploy production
+- [x] Deploy produksi di Vercel (health check, DB cloud, struk email aktif)
+- [ ] Video demo final (naskah tersedia di `docs/VIDEO.md`)
 
 ## GitHub & Vercel
 
@@ -110,7 +111,10 @@ mengonfirmasi status ke API Midtrans sebelum mengaktifkan paket, jadi tidak bisa
 - Vercel: project `kasirku` di team `kafa10`, di-import dari repo tersebut. `vercel.json` memakai `npm run build:vercel` yang menjalankan `prisma migrate deploy && next build`.
 - Secret production diisi di Vercel Dashboard, bukan di Git. Template: [`.env.production.example`](.env.production.example).
 - Health check setelah deploy: `GET /api/health` → `200` bila database terhubung.
-- URL produksi: akan dicantumkan setelah deploy pertama berhasil.
+- URL produksi: <https://kasirku-psi-two.vercel.app>.
+- Database produksi: MySQL Railway (project `valiant-compassion`) dengan database `kasirku`; kredensial hanya tersimpan sebagai secret Vercel.
+- Email produksi sudah aktif lewat Resend dengan pengirim `onboarding@resend.dev` (penerima dibatasi akun Resend sampai domain sendiri diverifikasi).
+- Akun demo produksi memakai kredensial yang sama dengan seed lokal (`admin@kasirku.test`, `agency@kasirku.test`, `kopi@kasirku.test`, `baju@kasirku.test`).
 
 Cara kerja: [`docs/CARA-KERJA.md`](docs/CARA-KERJA.md). Panduan demo: [`docs/DEMO.md`](docs/DEMO.md).
 Catatan teknis: [`docs/ARSITEKTUR.md`](docs/ARSITEKTUR.md). Deploy: [`docs/DEPLOY.md`](docs/DEPLOY.md).
