@@ -61,6 +61,12 @@ EMAIL_FROM="Kasirku <halo@domainkamu.com>"
 
 Untuk coba cepat tanpa domain, pakai `EMAIL_FROM="Kasirku <onboarding@resend.dev>"`. Resend hanya mengirim dari alamat itu ke email yang dipakai saat mendaftar Resend; untuk alamat pembeli apa pun, domain terverifikasi wajib.
 
+### Proteksi tambahan yang sudah aktif
+
+- **Arcjet Shield/WAF:** `ARCJET_KEY` sudah dipasang untuk production dan preview. Endpoint login/register/forgot-password memakai rate limit lintas instance; pendaftaran juga menolak email disposable/invalid. Tanpa key, aplikasi jatuh ke rate limiter in-memory dengan batas lebih ketat.
+- **Two-factor authentication:** pengguna mengaktifkan TOTP (Google Authenticator, Authy, dll.) lewat **Akun & Keamanan**. Secret dienkripsi AES-256-GCM, kode pemulihan sekali pakai di-hash bcrypt, dan login akan meminta kode sebelum sesi dibuat.
+- **Domain sendiri (opsional):** di Vercel buka **Settings → Domains → Add**, lalu di registrar arahkan `A @` ke `76.76.21.21` dan `CNAME www` ke `cname.vercel-dns.com`. Setelah aktif, ubah `NEXT_PUBLIC_APP_URL` ke domain tersebut dan daftarkan hostname yang sama di Arcjet serta di Resend untuk pengirim `halo@domainkamu.com`.
+
 ## Opsi B — VPS + Docker Compose
 
 Butuh Docker Engine + Docker Compose plugin. Copy `.env.example` ke `.env`, isi semua variabel, lalu:
