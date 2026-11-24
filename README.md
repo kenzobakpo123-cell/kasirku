@@ -23,9 +23,10 @@ Pembeli langsung: **agensi / freelancer** yang melayani UMKM. Pengguna akhir: **
 4. Laporan (penjualan harian, produk terlaris, stok menipis, ekspor CSV)
 5. RBAC `OWNER`/`MANAGER`/`CASHIER`/`AGENCY` + audit log + sesi perangkat
 6. Dashboard agensi + kode referral
-7. Billing manual (transfer + verifikasi); Midtrans menyusul
+7. Billing manual (transfer + verifikasi) **atau otomatis** lewat Midtrans Snap (QRIS/VA/kartu)
+8. Import produk CSV, akun & keamanan (sesi perangkat, ganti password)
 
-**Phase 2:** antrean transaksi offline-first dengan sinkronisasi idempotent, barcode scanner kamera, purchase order supplier.
+**Roadmap:** verifikasi email, barcode scanner kamera, purchase order supplier, deploy.
 
 ## Arsitektur (rencana)
 
@@ -62,6 +63,13 @@ Alternatif tanpa XAMPP: nyalakan Docker Desktop, `docker compose up -d` (MySQL d
 
 Cek: `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`.
 
+### Midtrans (opsional)
+
+Isi `MIDTRANS_SERVER_KEY`, `NEXT_PUBLIC_MIDTRANS_CLIENT_KEY`, dan `MIDTRANS_IS_PRODUCTION` di `.env`.
+Tanpa itu, halaman tagihan otomatis memakai alur transfer manual. Pasang webhook di dashboard Midtrans ke
+`POST {NEXT_PUBLIC_APP_URL}/api/billing/midtrans/webhook`. Webhook memverifikasi signature SHA-512 dan
+mengonfirmasi status ke API Midtrans sebelum mengaktifkan paket, jadi tidak bisa ditipu lewat request palsu.
+
 ## Status
 
 - [x] Folder & git repository dibuat
@@ -79,8 +87,12 @@ Cek: `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`.
 - [x] Manajemen tim (RBAC) & outlet, edit produk + restock dengan riwayat mutasi
 - [x] Antrean transaksi offline dengan idempotency key + auto-sinkron
 - [x] Landing page conversion: cara kerja, studi kasus, FAQ, CTA
-- [x] 40 unit test, lint, typecheck, build hijau (32 route) + robots/sitemap
-- [ ] Midtrans otomatis, email verifikasi, barcode kamera
+- [x] Import produk CSV (header ID/EN, validasi baris, batas paket, riwayat stok)
+- [x] Akun & keamanan: sesi perangkat + cabut akses, ganti password mencabut sesi lain
+- [x] Midtrans Snap (checkout + webhook terverifikasi + aktivasi paket idempoten)
+- [x] CI GitHub Actions (typecheck, lint, test, build)
+- [x] 49 unit test, lint, typecheck, build hijau (37 route) + robots/sitemap
+- [ ] Email verifikasi, barcode kamera
 - [ ] Video demo & deploy
 
 Panduan demo: [`docs/DEMO.md`](docs/DEMO.md). Catatan teknis: [`docs/ARSITEKTUR.md`](docs/ARSITEKTUR.md).

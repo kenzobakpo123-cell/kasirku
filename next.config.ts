@@ -12,7 +12,7 @@ const contentSecurityPolicy = [
   "style-src 'self' 'unsafe-inline'",
   "font-src 'self' data:",
   "img-src 'self' data: https:",
-  "connect-src 'self'",
+  `connect-src 'self'${process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_URL ? ` ${process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_URL}` : " https://app.sandbox.midtrans.com https://app.midtrans.com"}`,
   "upgrade-insecure-requests",
 ].join("; ");
 

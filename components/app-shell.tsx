@@ -37,7 +37,7 @@ export function AppShell({
             <Link href="/tagihan">Tagihan</Link>
             {isAdmin ? <Link href="/admin">Admin</Link> : null}
             <TenantSwitcher memberships={memberships} activeTenantId={activeTenantId} />
-            <span className="small muted">{viewer.email}</span>
+            <Link href="/akun" className="small muted">{viewer.email}</Link>
             <LogoutButton />
           </div>
         </nav>

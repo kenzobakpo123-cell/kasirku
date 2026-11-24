@@ -47,6 +47,14 @@ Buka `/tagihan`, ajukan upgrade PRO, lalu login `admin@kasirku.test / admin12345
 ### 9. Offline (1 menit)
 Matikan network di DevTools, buat transaksi, lalu nyalakan lagi. Antrean otomatis sinkron memakai idempotency key yang sama.
 
+### 10. Import CSV & keamanan akun (1 menit)
+Buka `/produk` → “Import dari CSV”, unduh contoh, lalu import. Buka `/akun`: lihat perangkat aktif dan
+ganti password (perangkat lain otomatis dicabut).
+
+### 11. Midtrans (opsional, 1 menit)
+Isi kredensial sandbox `.env`, buka `/tagihan` → “Bayar otomatis (Midtrans)”. Tekankan webhook terverifikasi
+dan aktivasi paket yang idempoten. Tanpa kredensial, alur transfer manual tetap tampil.
+
 ## Penutup (30 detik)
 “Satu produk, dua pembayaran: langganan outlet + komisi agensi. MVP sudah jalan; Midtrans dan barcode kamera masuk roadmap.”
 

@@ -55,6 +55,22 @@ Antrean transaksi disimpan di `localStorage` memakai `idempotencyKey` yang sama 
 Saat `online`, klien melakukan refresh sesi lalu mengirim ulang antrean. Karena `Sale.idempotencyKey`
 unik per tenant, sinkron ulang tidak pernah menggandakan penjualan maupun pengurangan stok.
 
+## Pembayaran Midtrans
+
+Checkout membuat `Payment` dengan `method = MIDTRANS_SNAP:<order_id>` sebelum Snap token dikembalikan ke browser.
+Webhook `POST /api/billing/midtrans/webhook` memverifikasi signature SHA-512 dari `order_id`, `status_code`,
+dan `gross_amount`, lalu mengonfirmasi ulang status ke API Midtrans. Hanya `settlement` / `capture+accept`
+yang mengaktifkan subscription, dan hanya jika nominal cocok. Update dibatasi dengan `status = PENDING`,
+sehingga webhook yang dikirim ulang tidak menggandakan aktivasi. Polling di UI hanya menyegarkan tampilan;
+webhook tetap sumber kebenaran.
+
+## Import CSV
+
+Parser CSV mandiri menangani BOM, CRLF, koma dalam quote, dan quote ganda. Header menerima alias Bahasa Indonesia
+(Nama, SKU, Harga, Modal, Stok, Stok Minimum) maupun Inggris. Angka seperti `22.000` dinormalisasi.
+Maksimal 500 baris; SKU duplikat dalam file maupun dengan data toko ditolak. Setiap baris tervalidasi
+memakai `productSchema` yang sama dengan form; stok awal > 0 ditulis sebagai `StockMovement` tipe `RESTOCK`.
+
 ## Tradeoff yang disengaja
 
 - Belum ada email verifikasi / reset password (direncanakan)

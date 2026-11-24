@@ -44,6 +44,9 @@ export function ProductsClient() {
   const [notice, setNotice] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [showImport, setShowImport] = useState(false);
+  const [csvText, setCsvText] = useState("");
+  const [importing, setImporting] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -153,6 +156,42 @@ export function ProductsClient() {
     await load();
   }
 
+  async function importCsv() {
+    setError("");
+    setNotice("");
+    setImporting(true);
+    try {
+      const res = await fetch("/api/products/import", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ csv: csvText }),
+      });
+      const data = (await res.json()) as {
+        error?: string;
+        details?: string[];
+        imported?: number;
+      };
+      if (!res.ok) {
+        const detail = data.details?.slice(0, 3).join(" · ");
+        throw new Error(detail ? `${data.error ?? "CSV invalid"} — ${detail}` : data.error ?? "Gagal import.");
+      }
+      setNotice(`${data.imported ?? 0} produk berhasil diimpor.`);
+      setCsvText("");
+      setShowImport(false);
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Gagal import CSV.");
+    } finally {
+      setImporting(false);
+    }
+  }
+
+  async function pickFile(file: File | undefined) {
+    if (!file) return;
+    setError("");
+    setCsvText(await file.text());
+  }
+
   return (
     <>
       <div className="page-head">
@@ -204,6 +243,44 @@ export function ProductsClient() {
               {saving ? "Menyimpan…" : editing ? "Simpan perubahan" : "Simpan produk"}
             </button>
           </form>
+
+          <div style={{ marginTop: 18, borderTop: "1px solid var(--line)", paddingTop: 14 }}>
+            <button className="btn btn-ghost btn-sm" type="button" onClick={() => setShowImport((value) => !value)}>
+              {showImport ? "Tutup import CSV" : "📥 Import dari CSV"}
+            </button>
+            {showImport ? (
+              <div style={{ marginTop: 12 }}>
+                <p className="small muted" style={{ marginTop: 0 }}>
+                  Header: Nama, SKU, Harga, Modal, Stok, Stok Minimum. Maksimal 500 baris.
+                </p>
+                <div className="toolbar">
+                  <input
+                    className="input"
+                    type="file"
+                    accept=".csv,text/csv"
+                    onChange={(event) => pickFile(event.target.files?.[0])}
+                  />
+                  <a className="btn btn-ghost btn-sm" href="/contoh-produk.csv" download>Contoh CSV</a>
+                </div>
+                <textarea
+                  className="input"
+                  rows={5}
+                  value={csvText}
+                  onChange={(event) => setCsvText(event.target.value)}
+                  placeholder={"Nama,SKU,Harga,Modal,Stok,Stok Minimum\nKopi Latte,KL-1,22000,8000,30,10"}
+                />
+                <button
+                  className="btn btn-primary btn-sm"
+                  type="button"
+                  disabled={importing || csvText.trim() === ""}
+                  onClick={importCsv}
+                  style={{ marginTop: 8 }}
+                >
+                  {importing ? "Mengimpor…" : "Import produk"}
+                </button>
+              </div>
+            ) : null}
+          </div>
         </section>
 
         <section className="card">

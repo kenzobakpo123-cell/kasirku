@@ -38,6 +38,8 @@ export function BillingClient({
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [saving, setSaving] = useState(false);
+  const [snap, setSnap] = useState<{ token: string; orderId: string; amount: number } | null>(null);
+  const [paying, setPaying] = useState(false);
   const limits = PLAN_LIMITS[plan];
   const amount = priceFor(selected, outletCount);
 
@@ -60,6 +62,46 @@ export function BillingClient({
       setError(err instanceof Error ? err.message : "Gagal mengajukan pembayaran.");
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function payWithMidtrans() {
+    setError("");
+    setNotice("");
+    setPaying(true);
+    try {
+      const res = await fetch("/api/billing/midtrans", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Kasirku-Client": "pwa" },
+        body: JSON.stringify({ plan: selected }),
+      });
+      const data = (await res.json()) as { error?: string; token?: string; orderId?: string; amount?: number };
+      if (!res.ok || !data.token || !data.orderId) {
+        throw new Error(data.error ?? "Gagal membuat pembayaran.");
+      }
+      setSnap({ token: data.token, orderId: data.orderId, amount: data.amount ?? amount });
+      setNotice("Jendela pembayaran dibuka. Selesaikan pembayaran; status akan diperbarui otomatis.");
+      window.open(`https://app.sandbox.midtrans.com/snap/v2/embed/${data.token}`, "_blank", "noopener,noreferrer");
+
+      // Webhook adalah sumber kebenaran; polling hanya untuk menyegarkan tampilan.
+      for (let attempt = 0; attempt < 30; attempt += 1) {
+        await new Promise((resolve) => window.setTimeout(resolve, 4000));
+        const check = await fetch("/api/billing/payments", { cache: "no-store" });
+        const payload = (await check.json()) as {
+          payments: Array<{ amount: number; status: string }>;
+        };
+        if (payload.payments.some((item) => item.status === "PAID" && item.amount === data.amount)) {
+          setSnap(null);
+          setNotice("Pembayaran diterima. Paket kamu sudah aktif.");
+          router.refresh();
+          return;
+        }
+      }
+      setNotice("Pembayaran belum terdeteksi. Cek tagihan beberapa saat lagi.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Gagal memulai pembayaran.");
+    } finally {
+      setPaying(false);
     }
   }
 
@@ -112,9 +154,20 @@ export function BillingClient({
             <span>Total bayar</span>
             <span>{rupiah(amount)}</span>
           </div>
-          <button className="btn btn-primary" type="button" onClick={requestUpgrade} disabled={saving} style={{ width: "100%" }}>
-            {saving ? "Mengirim…" : "Kirim pengajuan"}
+          <button className="btn btn-primary" type="button" onClick={requestUpgrade} disabled={saving || paying} style={{ width: "100%" }}>
+            {saving ? "Mengirim…" : "Kirim pengajuan transfer"}
           </button>
+          <button className="btn btn-ghost" type="button" onClick={payWithMidtrans} disabled={saving || paying} style={{ width: "100%", marginTop: 8 }}>
+            {paying ? "Menyiapkan pembayaran…" : "Bayar otomatis (Midtrans)"}
+          </button>
+          {snap ? (
+            <p className="small muted" style={{ marginBottom: 0 }}>
+              Order <strong>{snap.orderId}</strong> · {rupiah(snap.amount)}. Jangan tutup halaman ini sampai lunas.
+            </p>
+          ) : null}
+          <p className="small muted" style={{ marginBottom: 0 }}>
+            Midtrans menerima kartu, VA, dan QRIS. Transfer manual tetap tersedia tanpa biaya gateway.
+          </p>
         </section>
       </div>
 
