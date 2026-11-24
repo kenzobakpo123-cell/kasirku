@@ -15,6 +15,9 @@ Dua jalur: **Vercel + MySQL cloud** (paling cepat) atau **VPS/Docker** (kontrol 
 | `NEXT_PUBLIC_APP_URL` | `https://kasirku.vercel.app` |
 | `RESEND_API_KEY` | opsional, tapi **wajib di production** untuk verifikasi email & reset password |
 | `EMAIL_FROM` | `Kasirku <halo@domainkamu.com>` (domain terverifikasi di Resend) |
+| `WHATSAPP_ACCESS_TOKEN` | opsional; token permanen WhatsApp Business Cloud API |
+| `WHATSAPP_PHONE_NUMBER_ID` | opsional; Phone Number ID dari Meta Business Suite |
+| `WHATSAPP_API_VERSION` | `v21.0` (default) |
 | `MIDTRANS_SERVER_KEY` | opsional; kosongkan untuk transfer manual |
 | `NEXT_PUBLIC_MIDTRANS_CLIENT_KEY` | opsional |
 | `MIDTRANS_IS_PRODUCTION` | `false` saat sandbox, `true` saat production |
@@ -62,7 +65,8 @@ docker compose -f docker-compose.prod.yml exec db mariadb-dump -ukasirku -p kasi
 ## Checklist sebelum dijual
 
 - [ ] `JWT_SECRET` production berbeda dari lokal
-- [ ] `RESEND_API_KEY` + `EMAIL_FROM` aktif (email verifikasi & reset benar-benar terkirim)
+- [ ] `RESEND_API_KEY` + `EMAIL_FROM` aktif (verifikasi, reset, dan struk email benar-benar terkirim)
+- [ ] `WHATSAPP_ACCESS_TOKEN` + `WHATSAPP_PHONE_NUMBER_ID` aktif bila struk WhatsApp harus terkirim tanpa konfirmasi kasir
 - [ ] Webhook Midtrans terpasang dan signature terverifikasi (cek log audit `PAYMENT_APPROVED`)
 - [ ] `NEXT_PUBLIC_APP_URL` tanpa trailing slash dan sesuai domain
 - [ ] Seed demo **dihapus** atau diganti data kosong untuk tenant production

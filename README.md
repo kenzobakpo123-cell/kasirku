@@ -18,8 +18,8 @@ Pembeli langsung: **agensi / freelancer** yang melayani UMKM. Pengguna akhir: **
 ## MVP
 
 1. Onboarding tenant + outlet + undang kasir
-2. Produk & stok (CRUD, stok minimum, riwayat mutasi)
-3. Kasir PWA (keranjang, diskon, pembayaran, struk cetak/link WhatsApp)
+2. Produk & stok (CRUD, gambar produk, stok minimum, riwayat mutasi)
+3. Kasir PWA (keranjang, diskon, pembayaran, struk cetak + kirim otomatis WA/email)
 4. Laporan (penjualan harian, produk terlaris, stok menipis, ekspor CSV)
 5. RBAC `OWNER`/`MANAGER`/`CASHIER`/`AGENCY` + audit log + sesi perangkat
 6. Dashboard agensi + kode referral
@@ -93,10 +93,12 @@ mengonfirmasi status ke API Midtrans sebelum mengaktifkan paket, jadi tidak bisa
 - [x] Midtrans Snap (checkout + webhook terverifikasi + aktivasi paket idempoten)
 - [x] Email verifikasi + lupa/reset password (token di-hash, sekali pakai, Resend)
 - [x] Barcode scanner kamera (BarcodeDetector + fallback ZXing) + label CODE128 per produk
+- [x] Gambar produk (upload ringkas, pratinjau, tampil di kasir & keranjang)
+- [x] Struk otomatis ke pembeli (WhatsApp Business API / Resend + kirim ulang)
 - [x] CI GitHub Actions (typecheck, lint, test, build)
 - [x] Dockerfile + docker-compose produksi + panduan Vercel
 - [x] Naskah video demo 3 menit
-- [x] 52 unit test, lint, typecheck, build hijau (44 route) + robots/sitemap
+- [x] 57 unit test, lint, typecheck, build hijau + robots/sitemap
 - [ ] Video demo final & deploy production
 
 Cara kerja: [`docs/CARA-KERJA.md`](docs/CARA-KERJA.md). Panduan demo: [`docs/DEMO.md`](docs/DEMO.md).

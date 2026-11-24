@@ -26,6 +26,7 @@ export async function GET(req: NextRequest) {
       id: true,
       name: true,
       sku: true,
+      imageData: true,
       price: true,
       cost: true,
       stock: true,
@@ -77,13 +78,14 @@ export async function POST(req: NextRequest) {
           tenantId: auth.ctx.tenantId,
           outletId: data.outletId ?? null,
           sku: data.sku || null,
+          imageData: data.imageData ?? null,
           name: data.name,
           price: data.price,
           cost: data.cost,
           stock: data.stock,
           minStock: data.minStock,
         },
-        select: { id: true, name: true, price: true, stock: true },
+        select: { id: true, name: true, sku: true, imageData: true, price: true, stock: true },
       });
       if (data.stock > 0) {
         await tx.stockMovement.create({

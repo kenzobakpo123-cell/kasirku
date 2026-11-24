@@ -34,6 +34,13 @@ enum PaymentMethod {
   OTHER
 }
 
+enum ReceiptChannel {
+  NONE
+  WHATSAPP
+  EMAIL
+  BOTH
+}
+
 enum SubscriptionStatus {
   ACTIVE
   PAST_DUE
@@ -153,6 +160,7 @@ model Product {
   tenantId  Int
   outletId  Int?
   sku       String?  @db.VarChar(64)
+  imageData String?  @db.MediumText
   name      String   @db.VarChar(160)
   price     Int
   cost      Int      @default(0)
@@ -201,6 +209,12 @@ model Sale {
   method         PaymentMethod  @default(CASH)
   note           String?        @db.VarChar(200)
   idempotencyKey String?        @db.VarChar(80)
+  customerName   String?        @db.VarChar(120)
+  customerPhone  String?        @db.VarChar(32)
+  customerEmail  String?        @db.VarChar(120)
+  receiptChannel ReceiptChannel @default(NONE)
+  receiptSent    Boolean        @default(false)
+  receiptError   String?        @db.VarChar(300)
   createdAt      DateTime       @default(now())
 
   tenant         Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)

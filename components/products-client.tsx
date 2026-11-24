@@ -1,32 +1,91 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import NextImage from "next/image";
 import { rupiah } from "@/lib/format";
 
 type Product = {
   id: number;
   name: string;
   sku: string | null;
+  imageData: string | null;
   price: number;
   cost: number;
   stock: number;
   minStock: number;
 };
 
-type Form = { name: string; sku: string; price: string; cost: string; stock: string; minStock: string };
+type Form = {
+  name: string;
+  sku: string;
+  imageData: string | null;
+  price: string;
+  cost: string;
+  stock: string;
+  minStock: string;
+};
 
 const headers = { "Content-Type": "application/json", "X-Kasirku-Client": "pwa" };
-const emptyForm: Form = { name: "", sku: "", price: "", cost: "", stock: "", minStock: "0" };
+const emptyForm: Form = {
+  name: "",
+  sku: "",
+  imageData: null,
+  price: "",
+  cost: "",
+  stock: "",
+  minStock: "0",
+};
 
 function formFrom(product: Product): Form {
   return {
     name: product.name,
     sku: product.sku ?? "",
+    imageData: product.imageData ?? null,
     price: String(product.price),
     cost: String(product.cost),
     stock: String(product.stock),
     minStock: String(product.minStock),
   };
+}
+
+/** Kecilkan gambar di browser sebelum disimpan supaya database tidak membengkak. */
+async function compressImage(file: File): Promise<string> {
+  if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+    throw new Error("Pilih gambar JPG, PNG, atau WebP.");
+  }
+  if (file.size > 8 * 1024 * 1024) throw new Error("Ukuran gambar maksimal 8 MB.");
+
+  const url = URL.createObjectURL(file);
+  try {
+    const image = new Image();
+    await new Promise<void>((resolve, reject) => {
+      image.onload = () => resolve();
+      image.onerror = () => reject(new Error("Gambar tidak bisa dibaca."));
+      image.src = url;
+    });
+
+    const max = 720;
+    const scale = Math.min(1, max / Math.max(image.naturalWidth, image.naturalHeight));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+    canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+    const context = canvas.getContext("2d");
+    if (!context) throw new Error("Browser tidak mendukung pemrosesan gambar.");
+    context.fillStyle = "#ffffff";
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL("image/jpeg", 0.82);
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+function nameFromFileName(fileName: string): string {
+  return fileName
+    .replace(/\.[^.]+$/, "")
+    .replace(/[-_]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 async function fetchProducts(): Promise<Product[]> {
@@ -39,6 +98,7 @@ async function fetchProducts(): Promise<Product[]> {
 export function ProductsClient() {
   const [products, setProducts] = useState<Product[]>([]);
   const [form, setForm] = useState<Form>(emptyForm);
+  const [imageName, setImageName] = useState("");
   const [editing, setEditing] = useState<Product | null>(null);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -74,11 +134,29 @@ export function ProductsClient() {
     setNotice("");
     setEditing(product);
     setForm(formFrom(product));
+    setImageName("");
   }
 
   function cancelEdit() {
     setEditing(null);
     setForm(emptyForm);
+    setImageName("");
+  }
+
+  async function pickProductImage(file: File | undefined) {
+    if (!file) return;
+    setError("");
+    try {
+      const imageData = await compressImage(file);
+      setForm((current) => ({
+        ...current,
+        imageData,
+        name: current.name || nameFromFileName(file.name),
+      }));
+      setImageName(file.name);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Gambar tidak bisa diproses.");
+    }
   }
 
   async function saveProduct(event: React.FormEvent) {
@@ -89,6 +167,7 @@ export function ProductsClient() {
     const payload = {
       name: form.name,
       sku: form.sku || undefined,
+      imageData: form.imageData,
       price: Number(form.price),
       cost: Number(form.cost || 0),
       stock: Number(form.stock || 0),
@@ -221,6 +300,35 @@ export function ProductsClient() {
               <span>SKU (opsional)</span>
               <input className="input" value={form.sku} onChange={(e) => update("sku", e.target.value)} placeholder="Bisa dipakai scanner barcode" />
             </label>
+            <div className="field">
+              <span>Gambar produk (opsional)</span>
+              <input
+                className="input"
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={(event) => {
+                  void pickProductImage(event.target.files?.[0]);
+                  event.target.value = "";
+                }}
+              />
+              <p className="small muted" style={{ marginTop: 4 }}>
+                Otomatis dikecilkan. Nama file dipakai sebagai nama produk bila kolom nama masih kosong.
+              </p>
+              {form.imageData ? (
+                <div className="image-preview">
+                  <NextImage src={form.imageData} alt="Pratinjau gambar produk" width={72} height={72} unoptimized />
+                  <div>
+                    <div className="small">{imageName || "Gambar tersimpan"}</div>
+                    <button className="btn btn-ghost btn-sm" type="button" onClick={() => {
+                      setForm((current) => ({ ...current, imageData: null }));
+                      setImageName("");
+                    }}>
+                      Hapus gambar
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+            </div>
             <div className="grid grid-2">
               <label className="field">
                 <span>Harga jual (Rp)</span>
@@ -246,7 +354,7 @@ export function ProductsClient() {
 
           <div style={{ marginTop: 18, borderTop: "1px solid var(--line)", paddingTop: 14 }}>
             <button className="btn btn-ghost btn-sm" type="button" onClick={() => setShowImport((value) => !value)}>
-              {showImport ? "Tutup import CSV" : "📥 Import dari CSV"}
+              {showImport ? "Tutup import CSV" : "Import dari CSV"}
             </button>
             {showImport ? (
               <div style={{ marginTop: 12 }}>
@@ -303,8 +411,17 @@ export function ProductsClient() {
                 {products.map((product) => (
                   <tr key={product.id}>
                     <td>
-                      <div>{product.name}</div>
-                      <div className="small muted">{product.sku ?? "—"}</div>
+                      <div className="product-cell">
+                        {product.imageData ? (
+                          <NextImage className="thumb" src={product.imageData} alt="" width={42} height={42} unoptimized />
+                        ) : (
+                          <span className="thumb thumb-empty" aria-hidden="true">{product.name.slice(0, 1)}</span>
+                        )}
+                        <div>
+                          <div>{product.name}</div>
+                          <div className="small muted">{product.sku ?? "—"}</div>
+                        </div>
+                      </div>
                     </td>
                     <td className="num">{rupiah(product.price)}</td>
                     <td className="num">

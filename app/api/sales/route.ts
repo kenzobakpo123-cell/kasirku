@@ -6,6 +6,7 @@ import { subscriptionPlan } from "@/lib/billing";
 import { db } from "@/lib/db";
 import { hasCapacity, PLAN_LIMITS, startOfMonth } from "@/lib/plans";
 import { forbidden, isSameOrigin } from "@/lib/security";
+import { sendReceiptForSale } from "@/lib/receipt-delivery";
 import { computeTotals, totalsAreValid } from "@/lib/sale";
 import { isDuplicateKeyError, saleSchema } from "@/lib/schemas";
 import { canUseCashier } from "@/lib/tenant";
@@ -58,9 +59,25 @@ export async function POST(req: NextRequest) {
   if (data.idempotencyKey) {
     const existing = await db.sale.findFirst({
       where: { tenantId: auth.ctx.tenantId, idempotencyKey: data.idempotencyKey },
-      select: { id: true, number: true, total: true },
+      select: {
+        id: true,
+        number: true,
+        subtotal: true,
+        discount: true,
+        total: true,
+        paid: true,
+        createdAt: true,
+      },
     });
-    if (existing) return NextResponse.json({ ok: true, sale: existing, replay: true });
+    if (existing) {
+      const delivery = await sendReceiptForSale({ saleId: existing.id, tenantId: auth.ctx.tenantId });
+      return NextResponse.json({
+        ok: true,
+        sale: { ...existing, change: existing.paid - existing.total },
+        replay: true,
+        receiptDelivery: delivery,
+      });
+    }
   }
 
   const outlet = await db.outlet.findFirst({
@@ -138,6 +155,10 @@ export async function POST(req: NextRequest) {
           method: data.method,
           note: data.note ?? null,
           idempotencyKey: data.idempotencyKey ?? null,
+          customerName: data.customerName ?? null,
+          customerPhone: data.customerPhone ?? null,
+          customerEmail: data.customerEmail ?? null,
+          receiptChannel: data.receiptChannel,
           items: { create: snapshots },
         },
         select: { id: true, number: true, total: true, paid: true },
@@ -159,6 +180,8 @@ export async function POST(req: NextRequest) {
       return { ...created, change: data.paid - total };
     });
 
+    const delivery = await sendReceiptForSale({ saleId: sale.id, tenantId: auth.ctx.tenantId });
+
     void audit({
       action: "SALE_CREATE",
       tenantId: auth.ctx.tenantId,
@@ -167,7 +190,7 @@ export async function POST(req: NextRequest) {
       entityId: sale.id,
       req,
     });
-    return NextResponse.json({ ok: true, sale }, { status: 201 });
+    return NextResponse.json({ ok: true, sale, receiptDelivery: delivery }, { status: 201 });
   } catch (error) {
     if (error instanceof SaleError) {
       return NextResponse.json({ error: error.message }, { status: error.status });
@@ -175,9 +198,25 @@ export async function POST(req: NextRequest) {
     if (isDuplicateKeyError(error) && data.idempotencyKey) {
       const existing = await db.sale.findFirst({
         where: { tenantId: auth.ctx.tenantId, idempotencyKey: data.idempotencyKey },
-        select: { id: true, number: true, total: true },
+        select: {
+          id: true,
+          number: true,
+          subtotal: true,
+          discount: true,
+          total: true,
+          paid: true,
+          createdAt: true,
+        },
       });
-      if (existing) return NextResponse.json({ ok: true, sale: existing, replay: true });
+      if (existing) {
+        const delivery = await sendReceiptForSale({ saleId: existing.id, tenantId: auth.ctx.tenantId });
+        return NextResponse.json({
+          ok: true,
+          sale: { ...existing, change: existing.paid - existing.total },
+          replay: true,
+          receiptDelivery: delivery,
+        });
+      }
     }
     throw error;
   }

@@ -25,6 +25,11 @@ export const loginSchema = z.object({
 export const productSchema = z.object({
   name: z.string().trim().min(1).max(160),
   sku: z.string().trim().max(64).optional(),
+  imageData: z
+    .string()
+    .max(2_000_000, "Gambar terlalu besar")
+    .regex(/^data:image\/(png|jpeg|webp|svg\+xml);base64,/, "Format gambar tidak didukung")
+    .nullish(),
   price: z.number().int().positive().max(2_000_000_000),
   cost: z.number().int().nonnegative().max(2_000_000_000).default(0),
   stock: z.number().int().nonnegative().max(10_000_000).default(0),
@@ -32,7 +37,10 @@ export const productSchema = z.object({
   outletId: z.number().int().positive().optional(),
 });
 
-export const saleSchema = z.object({
+const receiptChannelSchema = z.enum(["NONE", "WHATSAPP", "EMAIL", "BOTH"]);
+
+export const saleSchema = z
+  .object({
   outletId: z.number().int().positive(),
   items: z
     .array(
@@ -48,7 +56,26 @@ export const saleSchema = z.object({
   method: z.enum(["CASH", "QRIS", "TRANSFER", "OTHER"]).default("CASH"),
   note: z.string().trim().max(200).optional(),
   idempotencyKey: z.string().trim().min(8).max(80).optional(),
-});
+  customerName: z.string().trim().max(120).optional(),
+  customerPhone: z
+    .string()
+    .trim()
+    .max(32)
+    .refine((value) => /^\+?\d[\d\s().-]{6,30}$/.test(value), {
+      message: "Nomor WhatsApp tidak valid",
+    })
+    .optional(),
+  customerEmail: z.email().max(120).optional(),
+  receiptChannel: receiptChannelSchema.default("NONE"),
+})
+  .refine((value) => !value.receiptChannel.includes("WHATSAPP") || Boolean(value.customerPhone), {
+    message: "Nomor WhatsApp pembeli wajib diisi",
+    path: ["customerPhone"],
+  })
+  .refine((value) => !value.receiptChannel.includes("EMAIL") || Boolean(value.customerEmail), {
+    message: "Email pembeli wajib diisi",
+    path: ["customerEmail"],
+  });
 
 export function isDuplicateKeyError(error: unknown): boolean {
   return typeof error === "object" && error !== null && "code" in error && error.code === "P2002";

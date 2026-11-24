@@ -1,16 +1,17 @@
 # Cara kerja Kasirku
 
-Dokumen ini menjelaskan dua alur yang paling sering ditanya: **pembayaran langganan** dan **barcode kasir**.
+Dokumen ini menjelaskan alur utama: **gambar produk**, **barcode kasir**, **pembayaran langganan**, dan **struk otomatis ke pembeli**.
 
 ## 1. Alur penjualan di kasir
 
-1. Owner/manager menambah produk di `/produk`, lengkap dengan **SKU**.
-2. Kasir membuka `/kasir`, mencari nama/SKU, atau memindai barcode.
-3. Saat barcode terbaca, SKU dicocokkan dengan produk. Produk langsung masuk keranjang dan kolom pencarian terisi otomatis.
-4. Kasir memasukkan uang bayar, lalu menekan **Bayar**.
-5. Server membuat transaksi dalam satu database transaction: nomor invoice dibuat, stok dicek, stok dikurangi, dan mutasi stok dicatat. Kalau stok tidak cukup, transaksi ditolak — tidak pernah minus.
-6. Struk muncul, bisa dicetak 58 mm atau dikirim lewat WhatsApp.
-7. `/laporan` otomatis menampilkan omzet, laba kotor, produk terlaris, dan stok menipis.
+1. Owner/manager menambah produk di `/produk`. Pilih gambar JPG/PNG/WebP — gambar otomatis dikecilkan, dan nama file bisa langsung jadi nama produk bila kolom nama kosong.
+2. Gambar tampil di daftar produk, di daftar produk kasir, dan di keranjang. Data demo sudah memakai gambar untuk tiap produk.
+3. Kasir membuka `/kasir`, mencari nama/SKU, atau memindai barcode.
+4. Saat barcode terbaca, SKU dicocokkan dengan produk. Produk langsung masuk keranjang dan kolom pencarian terisi otomatis.
+5. Kasir mengisi nama/kontak pembeli, memilih kanal struk, memasukkan uang bayar, lalu menekan **Bayar**.
+6. Server membuat transaksi dalam satu database transaction: nomor invoice dibuat, stok dicek, stok dikurangi, dan mutasi stok dicatat. Kalau stok tidak cukup, transaksi ditolak — tidak pernah minus.
+7. Setelah transaksi tersimpan, server mengirim struk ke WhatsApp/email pembeli. Struk juga muncul di layar untuk dicetak 58 mm.
+8. `/laporan` otomatis menampilkan omzet, laba kotor, produk terlaris, dan stok menipis.
 
 Idempotency key mencegah transaksi dobel saat jaringan mati: antrean offline memakai kunci yang sama ketika disinkronkan ulang.
 
@@ -62,11 +63,28 @@ Nominal PRO dihitung per outlet (`Rp199.000 × jumlah outlet`), Agency flat `Rp4
 
 Tanpa kredensial Midtrans, tombol otomatis mengembalikan pesan yang jelas dan transfer manual tetap berfungsi. Midtrans tidak disimpan di repo.
 
-## 4. Ringkasan untuk demo
+## 4. Struk otomatis ke pembeli
+
+Di `/kasir`, bagian **Pembeli & pengiriman struk** berisi nama pembeli, nomor WhatsApp, email, dan pilihan kanal:
+
+- **WhatsApp** — kirim lewat WhatsApp Business Cloud API bila `WHATSAPP_ACCESS_TOKEN` dan `WHATSAPP_PHONE_NUMBER_ID` diisi.
+- **Email** — kirim lewat Resend bila `RESEND_API_KEY` diisi.
+- **WhatsApp + email** — dua-duanya.
+- **Tidak dikirim** — struk hanya tampil di layar.
+
+Pengiriman terjadi dari server setelah transaksi berhasil, sehingga tidak perlu menekan tombol bagikan. Kegagalan pengiriman tidak membatalkan penjualan; status dan alasannya tampil di kartu struk dan tombol **Kirim ulang struk** tersedia.
+
+Tanpa kredensial WhatsApp, development otomatis membuka `wa.me/<nomor pembeli>` dengan isi struk sudah terisi — masih langsung ke pembeli, tetapi tombol kirim terakhir tetap di WhatsApp. Tanpa `RESEND_API_KEY`, isi email dicatat di log server supaya alur tetap bisa diuji.
+
+Nomor dinormalisasi ke format `62…`, jadi `0812-3456-7890`, `+62 812 3456 7890`, dan `6281234567890` semuanya dikenali.
+
+## 5. Ringkasan untuk demo
 
 ```text
-Daftar/login → buat produk + SKU → cetak Label → buka kasir → scan → bayar → stok turun → laporan jadi
-                                                         ↓
+Daftar/login → tambah produk + gambar + SKU → cetak Label → buka kasir → scan → isi pembeli → bayar
+                                                                              ↓
+                                                       struk otomatis WA/email → stok turun → laporan jadi
+                                                                              ↓
                                      /tagihan → ajukan upgrade → admin setujui → paket aktif
 ```
 

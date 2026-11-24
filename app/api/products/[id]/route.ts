@@ -48,6 +48,7 @@ export async function PATCH(req: NextRequest, context: Context) {
         data: {
           ...(data.name !== undefined ? { name: data.name } : {}),
           ...(data.sku !== undefined ? { sku: data.sku || null } : {}),
+          ...(data.imageData !== undefined ? { imageData: data.imageData ?? null } : {}),
           ...(data.price !== undefined ? { price: data.price } : {}),
           ...(data.cost !== undefined ? { cost: data.cost } : {}),
           ...(data.stock !== undefined ? { stock: data.stock } : {}),
@@ -72,7 +73,7 @@ export async function PATCH(req: NextRequest, context: Context) {
 
       return tx.product.findFirst({
         where: { id, tenantId: auth.ctx.tenantId },
-        select: { id: true, name: true, price: true, stock: true },
+        select: { id: true, name: true, sku: true, imageData: true, price: true, stock: true },
       });
     });
 

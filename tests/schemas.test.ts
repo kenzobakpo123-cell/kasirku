@@ -27,6 +27,28 @@ describe("schemas", () => {
     expect(productSchema.safeParse({ name: "Kopi", price: 18000 }).success).toBe(true);
   });
 
+  it("menerima gambar produk berupa data URL dan menolak tautan biasa", () => {
+    expect(
+      productSchema.safeParse({
+        name: "Kopi",
+        price: 18000,
+        imageData: "data:image/jpeg;base64,/9j/4AAQSkZJRg==",
+      }).success,
+    ).toBe(true);
+    expect(
+      productSchema.safeParse({ name: "Kopi", price: 18000, imageData: "https://contoh.com/a.jpg" }).success,
+    ).toBe(false);
+  });
+
+  it("mewajibkan kontak pembeli sesuai kanal struk", () => {
+    const base = { outletId: 1, items: [{ productId: 1, qty: 1 }], paid: 18000 };
+    expect(saleSchema.safeParse({ ...base, receiptChannel: "WHATSAPP" }).success).toBe(false);
+    expect(
+      saleSchema.safeParse({ ...base, receiptChannel: "WHATSAPP", customerPhone: "08123456789" }).success,
+    ).toBe(true);
+    expect(saleSchema.safeParse({ ...base, receiptChannel: "EMAIL", customerEmail: "a@b.com" }).success).toBe(true);
+  });
+
   it("mengisi default method CASH pada transaksi", () => {
     const result = saleSchema.safeParse({
       outletId: 1,

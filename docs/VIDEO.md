@@ -26,10 +26,10 @@ Tujuan: calon pembeli (agensi/freelancer) paham dalam 3 menit bahwa ini produk y
 
 ## 1:15–1:55 — Kasir + stok
 
-**Layar:** ganti tenant ke Kopi Senja, buka `/produk`, klik **Label** pada Kopi Americano, lalu buka `/kasir`, klik **Scan barcode**, arahkan kamera ke label — produk masuk keranjang. Tambah Americano, diskon, bayar, tunjukkan struk, klik cetak dan WhatsApp. Lalu buka `/produk`, lihat stok turun, klik **+ Stok**.
+**Layar:** ganti tenant ke Kopi Senja, buka `/produk`, tunjukkan gambar produk dan klik **Label** pada Kopi Americano, lalu buka `/kasir`, klik **Scan barcode**, arahkan kamera ke label — produk masuk keranjang. Isi nama dan nomor WhatsApp pembeli, pilih **WhatsApp**, diskon, bayar. Tunjukkan status "Struk otomatis terkirim" dan struknya, lalu klik cetak. Buka `/produk`, lihat stok turun, klik **+ Stok**.
 
 **Narasi:**
-"Label barcode CODE128 bisa dicetak langsung dari produk. Scanner memakai kamera, dengan fallback lintas browser; kalau kamera tidak tersedia, SKU tetap bisa diketik. Transaksi diproses dengan transaksi database bersyarat: stok hanya berkurang kalau masih cukup. Tidak bisa minus, tidak ada dobel transaksi. Struk langsung bisa dicetak atau dikirim lewat WhatsApp."
+"Tiap produk punya gambar; tinggal pilih file dan nama produk bisa diambil dari nama file. Label barcode CODE128 bisa dicetak langsung. Scanner memakai kamera, dengan fallback lintas browser; kalau kamera tidak tersedia, SKU tetap bisa diketik. Setelah bayar, server langsung mengirim struk ke WhatsApp atau email pembeli — kasir tidak perlu menyalin atau membagikan manual. Transaksi diproses dengan transaksi database bersyarat: stok hanya berkurang kalau masih cukup. Tidak bisa minus, tidak ada dobel transaksi."
 
 ## 1:55–2:20 — Laporan & CSV
 

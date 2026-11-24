@@ -1,13 +1,31 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
 import { rupiah } from "@/lib/format";
 import { dequeueSale, enqueueSale, loadQueue } from "@/lib/offline-queue";
 
-type Product = { id: number; name: string; sku: string | null; price: number; stock: number };
+type Product = {
+  id: number;
+  name: string;
+  sku: string | null;
+  imageData: string | null;
+  price: number;
+  stock: number;
+};
 type Outlet = { id: number; name: string };
 type ReceiptLine = { name: string; qty: number; subtotal: number };
-type Receipt = { number: string; total: number; paid: number; change: number; items: ReceiptLine[] };
+type Receipt = { id: number; number: string; total: number; paid: number; change: number; items: ReceiptLine[] };
+type ReceiptChannel = "NONE" | "WHATSAPP" | "EMAIL" | "BOTH";
+type ReceiptDelivery = {
+  skipped?: boolean;
+  alreadySent?: boolean;
+  emailSent: boolean;
+  whatsappSent: boolean;
+  whatsappUrl?: string;
+  dev: boolean;
+  errors: string[];
+};
 type DetectedBarcode = { rawValue: string };
 type BarcodeDetectorLike = {
   detect(source: HTMLVideoElement): Promise<DetectedBarcode[]>;
@@ -55,6 +73,12 @@ export function KasirClient() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [receipt, setReceipt] = useState<Receipt | null>(null);
+  const [delivery, setDelivery] = useState<ReceiptDelivery | null>(null);
+  const [resending, setResending] = useState(false);
+  const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [customerEmail, setCustomerEmail] = useState("");
+  const [channel, setChannel] = useState<ReceiptChannel>("WHATSAPP");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [syncing, setSyncing] = useState(false);
@@ -279,6 +303,9 @@ export function KasirClient() {
     setCart({});
     setDiscount("0");
     setPaid("");
+    setCustomerName("");
+    setCustomerPhone("");
+    setCustomerEmail("");
     setIdempotencyKey(newKey());
   }
 
@@ -305,6 +332,10 @@ export function KasirClient() {
       paid: paidValue,
       method: "CASH",
       idempotencyKey,
+      customerName: customerName.trim() || undefined,
+      customerPhone: customerPhone.trim() || undefined,
+      customerEmail: customerEmail.trim() || undefined,
+      receiptChannel: channel,
     };
 
     setSaving(true);
@@ -314,9 +345,14 @@ export function KasirClient() {
         headers,
         body: JSON.stringify(body),
       });
-      const data = (await res.json()) as { error?: string; sale?: Omit<Receipt, "items"> };
+      const data = (await res.json()) as {
+        error?: string;
+        sale?: Omit<Receipt, "items">;
+        receiptDelivery?: ReceiptDelivery;
+      };
       if (!res.ok || !data.sale) throw new Error(data.error ?? "Transaksi gagal.");
 
+      setDelivery(data.receiptDelivery ?? null);
       setReceipt({
         ...data.sale,
         items: lines.map((line) => ({
@@ -325,6 +361,9 @@ export function KasirClient() {
           subtotal: line.product.price * line.qty,
         })),
       });
+      if (data.receiptDelivery?.whatsappUrl) {
+        window.open(data.receiptDelivery.whatsappUrl, "_blank", "noopener,noreferrer");
+      }
       clearCart();
       await load();
     } catch (err) {
@@ -341,20 +380,35 @@ export function KasirClient() {
     }
   }
 
-  const waText = receipt
-    ? [
-        "*Struk Kasirku*",
-        receipt.number,
-        "",
-        ...receipt.items.map((item) => `${item.qty}× ${item.name} — ${rupiah(item.subtotal)}`),
-        "",
-        `Total: ${rupiah(receipt.total)}`,
-        `Dibayar: ${rupiah(receipt.paid)}`,
-        `Kembalian: ${rupiah(receipt.change)}`,
-        "Terima kasih sudah belanja di Kasirku.",
-      ].join("\n")
-    : "";
-  const waHref = `https://wa.me/?text=${encodeURIComponent(waText)}`;
+  async function resendReceipt() {
+    if (!receipt) return;
+    setResending(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/sales/${receipt.id}/resend`, { method: "POST", headers });
+      const data = (await res.json()) as { error?: string; receiptDelivery?: ReceiptDelivery };
+      if (!res.ok) throw new Error(data.error ?? "Struk gagal dikirim ulang.");
+      setDelivery(data.receiptDelivery ?? null);
+      if (data.receiptDelivery?.whatsappUrl) {
+        window.open(data.receiptDelivery.whatsappUrl, "_blank", "noopener,noreferrer");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Struk gagal dikirim ulang.");
+    } finally {
+      setResending(false);
+    }
+  }
+
+  function deliveryNote(): string {
+    if (!delivery) return "";
+    if (delivery.errors.length) return `Transaksi berhasil, tapi struk belum terkirim: ${delivery.errors.join(" · ")}`;
+    if (delivery.alreadySent) return "Struk sudah dikirim sebelumnya.";
+    if (delivery.emailSent && delivery.whatsappSent) return "Struk otomatis terkirim via email dan WhatsApp.";
+    if (delivery.emailSent) return "Struk otomatis terkirim ke email pembeli.";
+    if (delivery.whatsappSent) return "Struk otomatis terkirim ke WhatsApp pembeli.";
+    if (delivery.whatsappUrl) return "Mode demo: WhatsApp pembeli dibuka dengan struk siap dikirim.";
+    return "";
+  }
 
   return (
     <>
@@ -388,13 +442,30 @@ export function KasirClient() {
             <span>{rupiah(receipt.total)}</span>
           </div>
           <p className="small">Dibayar {rupiah(receipt.paid)} · Kembalian <strong>{rupiah(receipt.change)}</strong></p>
+          {deliveryNote() ? (
+            <p className="small" style={{ color: delivery?.errors.length ? "var(--warn)" : "var(--ok)" }}>
+              {deliveryNote()}
+            </p>
+          ) : null}
           <div className="toolbar" style={{ margin: 0 }}>
             <button className="btn btn-ghost btn-sm no-print" type="button" onClick={() => window.print()}>
               Cetak struk
             </button>
-            <a className="btn btn-ghost btn-sm no-print" href={waHref} target="_blank" rel="noreferrer">
-              Kirim via WhatsApp
-            </a>
+            {delivery?.whatsappUrl ? (
+              <a className="btn btn-ghost btn-sm no-print" href={delivery.whatsappUrl} target="_blank" rel="noreferrer">
+                Buka WhatsApp pembeli
+              </a>
+            ) : null}
+            {delivery && !delivery.skipped ? (
+              <button
+                className="btn btn-ghost btn-sm no-print"
+                type="button"
+                disabled={resending}
+                onClick={() => void resendReceipt()}
+              >
+                {resending ? "Mengirim…" : "Kirim ulang struk"}
+              </button>
+            ) : null}
             <button className="btn btn-ghost btn-sm no-print" type="button" onClick={() => setReceipt(null)}>
               Tutup
             </button>
@@ -440,8 +511,17 @@ export function KasirClient() {
                 {filtered.map((product) => (
                   <tr key={product.id}>
                     <td>
-                      <div>{product.name}</div>
-                      {product.sku ? <div className="small muted">{product.sku}</div> : null}
+                      <div className="product-cell">
+                        {product.imageData ? (
+                          <Image className="thumb" src={product.imageData} alt="" width={42} height={42} unoptimized />
+                        ) : (
+                          <span className="thumb thumb-empty" aria-hidden="true">{product.name.slice(0, 1)}</span>
+                        )}
+                        <div>
+                          <div>{product.name}</div>
+                          {product.sku ? <div className="small muted">{product.sku}</div> : null}
+                        </div>
+                      </div>
                     </td>
                     <td className="num">{rupiah(product.price)}</td>
                     <td className="num muted">{product.stock}</td>
@@ -464,9 +544,16 @@ export function KasirClient() {
           ) : (
             lines.map(({ product, qty }) => (
               <div className="cart-row" key={product.id}>
-                <div>
-                  <div>{product.name}</div>
-                  <div className="small muted">{rupiah(product.price)} × {qty}</div>
+                <div className="product-cell">
+                  {product.imageData ? (
+                    <Image className="thumb" src={product.imageData} alt="" width={42} height={42} unoptimized />
+                  ) : (
+                    <span className="thumb thumb-empty" aria-hidden="true">{product.name.slice(0, 1)}</span>
+                  )}
+                  <div>
+                    <div>{product.name}</div>
+                    <div className="small muted">{rupiah(product.price)} × {qty}</div>
+                  </div>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <button className="btn btn-ghost btn-sm" type="button" onClick={() => changeQty(product.id, -1)}>−</button>
@@ -479,6 +566,58 @@ export function KasirClient() {
               </div>
             ))
           )}
+
+          <div className="delivery-box" style={{ marginTop: 18 }}>
+            <h3 className="section-title">Pembeli & pengiriman struk</h3>
+            <div className="delivery-grid">
+              <label className="field">
+                <span>Nama pembeli</span>
+                <input
+                  className="input"
+                  value={customerName}
+                  onChange={(event) => setCustomerName(event.target.value)}
+                  placeholder="Opsional"
+                />
+              </label>
+              <label className="field">
+                <span>No. WhatsApp</span>
+                <input
+                  className="input"
+                  type="tel"
+                  value={customerPhone}
+                  onChange={(event) => setCustomerPhone(event.target.value)}
+                  placeholder="0812…"
+                />
+              </label>
+              <label className="field">
+                <span>Email pembeli</span>
+                <input
+                  className="input"
+                  type="email"
+                  value={customerEmail}
+                  onChange={(event) => setCustomerEmail(event.target.value)}
+                  placeholder="nama@email.com"
+                />
+              </label>
+              <label className="field">
+                <span>Kirim struk otomatis</span>
+                <select
+                  className="input"
+                  value={channel}
+                  onChange={(event) => setChannel(event.target.value as ReceiptChannel)}
+                >
+                  <option value="WHATSAPP">WhatsApp</option>
+                  <option value="EMAIL">Email</option>
+                  <option value="BOTH">WhatsApp + email</option>
+                  <option value="NONE">Tidak dikirim</option>
+                </select>
+              </label>
+            </div>
+            <p className="small muted" style={{ marginBottom: 0 }}>
+              Struk dikirim server setelah pembayaran berhasil. Tanpa kredensial WhatsApp/email, mode demo
+              membuka WhatsApp pembeli dengan pesan siap kirim dan mencatat isi email di log server.
+            </p>
+          </div>
 
           <div style={{ marginTop: 18 }}>
             <label className="field">

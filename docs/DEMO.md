@@ -30,9 +30,12 @@ Klik “Buat kode”, salin link. Jelaskan: klien daftar pakai link → otomatis
 ### 4. Ganti tenant ke Kopi Senja (30 detik)
 Pakai dropdown “Toko”. Tunjukkan bahwa satu akun bisa pindah konteks dengan aman.
 
-### 5. Kasir + stok (2 menit)
-Buka `/kasir`, tambah Kopi Americano, diskon, bayar.
-Tunjukkan struk → cetak → kirim WhatsApp.
+### 5. Gambar produk, kasir, stok & struk otomatis (2 menit)
+Di `/produk`, tunjukkan gambar pada tiap baris. Tambah produk baru: pilih gambar JPG/PNG, biarkan kolom nama kosong —
+nama produk otomatis diisi dari nama file — lalu isi harga dan stok.
+Buka `/kasir`, lihat gambar produk, tambah Kopi Americano, diskon. Isi nama pembeli, nomor WhatsApp `0812-3456-7890`,
+pilih **WhatsApp**, lalu bayar. Tunjukkan status struk otomatis di kartu transaksi; tanpa kredensial WhatsApp,
+`wa.me/6281234567890` terbuka dengan pesan struk siap dikirim. Tombol **Kirim ulang struk** juga bisa dicoba.
 Lalu buka `/produk`, lihat stok berkurang, klik “+ Stok” → riwayat mutasi tercatat.
 
 ### 6. Laporan (1 menit)
@@ -62,7 +65,7 @@ Isi kredensial sandbox `.env`, buka `/tagihan` → “Bayar otomatis (Midtrans)�
 dan aktivasi paket yang idempoten. Tanpa kredensial, alur transfer manual tetap tampil dan bisa dibuktikan sampai paket aktif.
 
 ## Penutup (30 detik)
-“Satu produk, dua pembayaran: langganan outlet + komisi agensi. Kasir, stok, barcode, Midtrans, dan verifikasi webhook sudah berjalan.”
+“Satu produk, dua pembayaran: langganan outlet + komisi agensi. Gambar produk, kasir, stok, barcode, struk otomatis WA/email, Midtrans, dan webhook terverifikasi sudah berjalan.”
 
 ## Reset data
 `npm run db:seed` menghapus data demo dan mengisinya ulang.

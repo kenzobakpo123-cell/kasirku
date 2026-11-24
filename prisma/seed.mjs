@@ -45,9 +45,14 @@ async function createTenant({ name, slug, ownerId, plan = "FREE", role = "OWNER"
   return tenant;
 }
 
-async function addProduct(tenantId, name, price, cost, stock, minStock, sku) {
+function productImage(initial, color) {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160"><rect width="160" height="160" rx="28" fill="${color}"/><circle cx="118" cy="42" r="28" fill="#ffffff" opacity="0.28"/><circle cx="34" cy="126" r="36" fill="#ffffff" opacity="0.18"/><text x="80" y="96" text-anchor="middle" font-family="Arial,sans-serif" font-size="62" font-weight="700" fill="#12201b">${initial}</text></svg>`;
+  return `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
+}
+
+async function addProduct(tenantId, name, price, cost, stock, minStock, sku, imageData) {
   return db.product.create({
-    data: { tenantId, name, price, cost, stock, minStock, sku },
+    data: { tenantId, name, price, cost, stock, minStock, sku, imageData },
     select: { id: true, name: true, sku: true, price: true, cost: true, stock: true },
   });
 }
@@ -137,12 +142,12 @@ async function main() {
   }
 
   const kopiProducts = [
-    await addProduct(kopi.id, "Kopi Americano", 18000, 6000, 40, 10, "KS-AMER-001"),
-    await addProduct(kopi.id, "Kopi Latte", 22000, 8000, 30, 10, "KS-LATE-002"),
-    await addProduct(kopi.id, "Croissant", 15000, 5000, 18, 5, "KS-CROI-003"),
-    await addProduct(kopi.id, "Teh Hangat", 8000, 2000, 25, 5, "KS-TEH-004"),
+    await addProduct(kopi.id, "Kopi Americano", 18000, 6000, 40, 10, "KS-AMER-001", productImage("A", "#d9c7a3")),
+    await addProduct(kopi.id, "Kopi Latte", 22000, 8000, 30, 10, "KS-LATE-002", productImage("L", "#e7d6bd")),
+    await addProduct(kopi.id, "Croissant", 15000, 5000, 18, 5, "KS-CROI-003", productImage("C", "#f0d79b")),
+    await addProduct(kopi.id, "Teh Hangat", 8000, 2000, 25, 5, "KS-TEH-004", productImage("T", "#c9ddb5")),
   ];
-  await addProduct(kopi.id, "Kue Coklat", 12000, 4000, 3, 5, "KS-KUE-005");
+  await addProduct(kopi.id, "Kue Coklat", 12000, 4000, 3, 5, "KS-KUE-005", productImage("K", "#c8a98c"));
 
   for (const [index, daysAgo] of [0, 0, 1, 2, 3, 5, 8, 12].entries()) {
     await addSale({
@@ -159,9 +164,9 @@ async function main() {
   }
 
   const bajuProducts = [
-    await addProduct(baju.id, "Kaos Polos", 65000, 35000, 24, 6, "BR-KAOS-001"),
-    await addProduct(baju.id, "Kemeja Flanel", 129000, 75000, 12, 4, "BR-FLAN-002"),
-    await addProduct(baju.id, "Tote Bag", 45000, 20000, 2, 5, "BR-TOTE-003"),
+    await addProduct(baju.id, "Kaos Polos", 65000, 35000, 24, 6, "BR-KAOS-001", productImage("K", "#b8d3cc")),
+    await addProduct(baju.id, "Kemeja Flanel", 129000, 75000, 12, 4, "BR-FLAN-002", productImage("F", "#d4b7bf")),
+    await addProduct(baju.id, "Tote Bag", 45000, 20000, 2, 5, "BR-TOTE-003", productImage("T", "#d7d1a8")),
   ];
   await addSale({
     tenantId: baju.id,
