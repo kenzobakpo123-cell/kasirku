@@ -142,6 +142,21 @@ export async function POST(req: NextRequest) {
         .toString("hex")
         .toUpperCase()}`;
 
+      // Email pembeli adalah identitas member. Transaksi apa pun otomatis
+      // mendaftarkan member baru bila email ini belum tersimpan di tenant.
+      const customer = await tx.customer.upsert({
+        where: {
+          tenantId_email: { tenantId: auth.ctx.tenantId, email: data.customerEmail },
+        },
+        create: {
+          tenantId: auth.ctx.tenantId,
+          name: data.customerName,
+          email: data.customerEmail,
+        },
+        update: { name: data.customerName },
+        select: { id: true },
+      });
+
       const created = await tx.sale.create({
         data: {
           tenantId: auth.ctx.tenantId,
@@ -155,9 +170,9 @@ export async function POST(req: NextRequest) {
           method: data.method,
           note: data.note ?? null,
           idempotencyKey: data.idempotencyKey ?? null,
-          customerName: data.customerName ?? null,
-          customerPhone: data.customerPhone ?? null,
-          customerEmail: data.customerEmail ?? null,
+          customerId: customer.id,
+          customerName: data.customerName,
+          customerEmail: data.customerEmail,
           receiptChannel: data.receiptChannel,
           items: { create: snapshots },
         },

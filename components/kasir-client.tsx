@@ -14,15 +14,13 @@ type Product = {
   stock: number;
 };
 type Outlet = { id: number; name: string };
+type Customer = { id: number; name: string; email: string; salesCount?: number };
 type ReceiptLine = { name: string; qty: number; subtotal: number };
 type Receipt = { id: number; number: string; total: number; paid: number; change: number; items: ReceiptLine[] };
-type ReceiptChannel = "NONE" | "WHATSAPP" | "EMAIL" | "BOTH";
 type ReceiptDelivery = {
   skipped?: boolean;
   alreadySent?: boolean;
   emailSent: boolean;
-  whatsappSent: boolean;
-  whatsappUrl?: string;
   dev: boolean;
   errors: string[];
 };
@@ -35,15 +33,21 @@ const headers = { "Content-Type": "application/json", "X-Kasirku-Client": "pwa" 
 const newKey = () =>
   typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `kk-${Date.now()}`;
 
-async function fetchKasirData(): Promise<{ products: Product[]; outlets: Outlet[] }> {
-  const [productRes, outletRes] = await Promise.all([
+async function fetchKasirData(): Promise<{ products: Product[]; outlets: Outlet[]; customers: Customer[] }> {
+  const [productRes, outletRes, customerRes] = await Promise.all([
     fetch("/api/products", { headers }),
     fetch("/api/outlets", { headers }),
+    fetch("/api/customers?limit=200", { headers }),
   ]);
-  if (!productRes.ok || !outletRes.ok) throw new Error("Gagal memuat data kasir.");
+  if (!productRes.ok || !outletRes.ok || !customerRes.ok) throw new Error("Gagal memuat data kasir.");
   const productData = (await productRes.json()) as { products: Product[] };
   const outletData = (await outletRes.json()) as { outlets: Outlet[] };
-  return { products: productData.products, outlets: outletData.outlets };
+  const customerData = (await customerRes.json()) as { customers: Customer[] };
+  return {
+    products: productData.products,
+    outlets: outletData.outlets,
+    customers: customerData.customers,
+  };
 }
 
 async function refreshSession(): Promise<void> {
@@ -66,6 +70,7 @@ function barcodeDetector(): BarcodeDetectorLike | null {
 export function KasirClient() {
   const [products, setProducts] = useState<Product[]>([]);
   const [outlets, setOutlets] = useState<Outlet[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
   const [cart, setCart] = useState<Record<number, number>>({});
   const [query, setQuery] = useState("");
   const [discount, setDiscount] = useState("0");
@@ -76,9 +81,7 @@ export function KasirClient() {
   const [delivery, setDelivery] = useState<ReceiptDelivery | null>(null);
   const [resending, setResending] = useState(false);
   const [customerName, setCustomerName] = useState("");
-  const [customerPhone, setCustomerPhone] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
-  const [channel, setChannel] = useState<ReceiptChannel>("WHATSAPP");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [syncing, setSyncing] = useState(false);
@@ -95,6 +98,7 @@ export function KasirClient() {
       const data = await fetchKasirData();
       setProducts(data.products);
       setOutlets(data.outlets);
+      setCustomers(data.customers);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Gagal memuat data kasir.");
     } finally {
@@ -153,6 +157,7 @@ export function KasirClient() {
       .then((data) => {
         setProducts(data.products);
         setOutlets(data.outlets);
+        setCustomers(data.customers);
       })
       .catch((err: unknown) => setError(err instanceof Error ? err.message : "Gagal memuat data kasir."))
       .finally(() => setLoading(false));
@@ -195,6 +200,14 @@ export function KasirClient() {
   const total = Math.max(0, subtotal - discountValue);
   const paidValue = Number(paid || 0);
   const change = paidValue - total;
+  const selectedEmail = customerEmail.trim().toLowerCase();
+  const selectedMember = customers.find((customer) => customer.email.toLowerCase() === selectedEmail);
+
+  function pickCustomerEmail(value: string) {
+    setCustomerEmail(value);
+    const match = customers.find((customer) => customer.email.toLowerCase() === value.trim().toLowerCase());
+    if (match) setCustomerName(match.name);
+  }
 
   function add(product: Product) {
     setError("");
@@ -304,7 +317,6 @@ export function KasirClient() {
     setDiscount("0");
     setPaid("");
     setCustomerName("");
-    setCustomerPhone("");
     setCustomerEmail("");
     setIdempotencyKey(newKey());
   }
@@ -324,6 +336,10 @@ export function KasirClient() {
       setError(`Pembayaran kurang ${rupiah(total - paidValue)}.`);
       return;
     }
+    if (!customerName.trim() || !customerEmail.trim()) {
+      setError("Nama dan email pembeli wajib diisi untuk member dan pengiriman struk.");
+      return;
+    }
 
     const body = {
       outletId: outlets[0].id,
@@ -332,10 +348,9 @@ export function KasirClient() {
       paid: paidValue,
       method: "CASH",
       idempotencyKey,
-      customerName: customerName.trim() || undefined,
-      customerPhone: customerPhone.trim() || undefined,
-      customerEmail: customerEmail.trim() || undefined,
-      receiptChannel: channel,
+      customerName: customerName.trim(),
+      customerEmail: customerEmail.trim(),
+      receiptChannel: "EMAIL",
     };
 
     setSaving(true);
@@ -361,9 +376,6 @@ export function KasirClient() {
           subtotal: line.product.price * line.qty,
         })),
       });
-      if (data.receiptDelivery?.whatsappUrl) {
-        window.open(data.receiptDelivery.whatsappUrl, "_blank", "noopener,noreferrer");
-      }
       clearCart();
       await load();
     } catch (err) {
@@ -389,9 +401,6 @@ export function KasirClient() {
       const data = (await res.json()) as { error?: string; receiptDelivery?: ReceiptDelivery };
       if (!res.ok) throw new Error(data.error ?? "Struk gagal dikirim ulang.");
       setDelivery(data.receiptDelivery ?? null);
-      if (data.receiptDelivery?.whatsappUrl) {
-        window.open(data.receiptDelivery.whatsappUrl, "_blank", "noopener,noreferrer");
-      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Struk gagal dikirim ulang.");
     } finally {
@@ -403,10 +412,10 @@ export function KasirClient() {
     if (!delivery) return "";
     if (delivery.errors.length) return `Transaksi berhasil, tapi struk belum terkirim: ${delivery.errors.join(" · ")}`;
     if (delivery.alreadySent) return "Struk sudah dikirim sebelumnya.";
-    if (delivery.emailSent && delivery.whatsappSent) return "Struk otomatis terkirim via email dan WhatsApp.";
     if (delivery.emailSent) return "Struk otomatis terkirim ke email pembeli.";
-    if (delivery.whatsappSent) return "Struk otomatis terkirim ke WhatsApp pembeli.";
-    if (delivery.whatsappUrl) return "Mode demo: WhatsApp pembeli dibuka dengan struk siap dikirim.";
+    if (delivery.dev) {
+      return "Mode demo: isi struk tercatat di log server. Isi RESEND_API_KEY untuk mengirim sungguhan.";
+    }
     return "";
   }
 
@@ -451,11 +460,6 @@ export function KasirClient() {
             <button className="btn btn-ghost btn-sm no-print" type="button" onClick={() => window.print()}>
               Cetak struk
             </button>
-            {delivery?.whatsappUrl ? (
-              <a className="btn btn-ghost btn-sm no-print" href={delivery.whatsappUrl} target="_blank" rel="noreferrer">
-                Buka WhatsApp pembeli
-              </a>
-            ) : null}
             {delivery && !delivery.skipped ? (
               <button
                 className="btn btn-ghost btn-sm no-print"
@@ -568,55 +572,45 @@ export function KasirClient() {
           )}
 
           <div className="delivery-box" style={{ marginTop: 18 }}>
-            <h3 className="section-title">Pembeli & pengiriman struk</h3>
+            <h3 className="section-title">Member & struk email</h3>
             <div className="delivery-grid">
               <label className="field">
-                <span>Nama pembeli</span>
+                <span>Cari / email member</span>
+                <input
+                  className="input"
+                  type="email"
+                  list="customer-options"
+                  value={customerEmail}
+                  onChange={(event) => pickCustomerEmail(event.target.value)}
+                  placeholder="nama@email.com"
+                />
+                <datalist id="customer-options">
+                  {customers.map((customer) => (
+                    <option key={customer.id} value={customer.email}>{customer.name}</option>
+                  ))}
+                </datalist>
+              </label>
+              <label className="field">
+                <span>Nama member</span>
                 <input
                   className="input"
                   value={customerName}
                   onChange={(event) => setCustomerName(event.target.value)}
-                  placeholder="Opsional"
+                  placeholder="Nama pembeli"
                 />
-              </label>
-              <label className="field">
-                <span>No. WhatsApp</span>
-                <input
-                  className="input"
-                  type="tel"
-                  value={customerPhone}
-                  onChange={(event) => setCustomerPhone(event.target.value)}
-                  placeholder="0812…"
-                />
-              </label>
-              <label className="field">
-                <span>Email pembeli</span>
-                <input
-                  className="input"
-                  type="email"
-                  value={customerEmail}
-                  onChange={(event) => setCustomerEmail(event.target.value)}
-                  placeholder="nama@email.com"
-                />
-              </label>
-              <label className="field">
-                <span>Kirim struk otomatis</span>
-                <select
-                  className="input"
-                  value={channel}
-                  onChange={(event) => setChannel(event.target.value as ReceiptChannel)}
-                >
-                  <option value="WHATSAPP">WhatsApp</option>
-                  <option value="EMAIL">Email</option>
-                  <option value="BOTH">WhatsApp + email</option>
-                  <option value="NONE">Tidak dikirim</option>
-                </select>
               </label>
             </div>
             <p className="small muted" style={{ marginBottom: 0 }}>
-              Struk dikirim server setelah pembayaran berhasil. Tanpa kredensial WhatsApp/email, mode demo
-              membuka WhatsApp pembeli dengan pesan siap kirim dan mencatat isi email di log server.
+              Pilih member yang sudah tersimpan atau ketik email baru. Email baru otomatis jadi member,
+              dan struk dikirim dari server setelah pembayaran berhasil.
             </p>
+            {selectedEmail ? (
+              <p className="small" style={{ marginBottom: 0, color: selectedMember ? "var(--ok)" : "var(--warn)" }}>
+                {selectedMember
+                  ? `Member ditemukan: ${selectedMember.name} · ${selectedMember.salesCount ?? 0} transaksi`
+                  : "Email baru akan disimpan sebagai member setelah bayar."}
+              </p>
+            ) : null}
           </div>
 
           <div style={{ marginTop: 18 }}>

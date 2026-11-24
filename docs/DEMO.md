@@ -30,12 +30,13 @@ Klik “Buat kode”, salin link. Jelaskan: klien daftar pakai link → otomatis
 ### 4. Ganti tenant ke Kopi Senja (30 detik)
 Pakai dropdown “Toko”. Tunjukkan bahwa satu akun bisa pindah konteks dengan aman.
 
-### 5. Gambar produk, kasir, stok & struk otomatis (2 menit)
+### 5. Gambar produk, kasir, member, stok & struk email (2 menit)
 Di `/produk`, tunjukkan gambar pada tiap baris. Tambah produk baru: pilih gambar JPG/PNG, biarkan kolom nama kosong —
 nama produk otomatis diisi dari nama file — lalu isi harga dan stok.
-Buka `/kasir`, lihat gambar produk, tambah Kopi Americano, diskon. Isi nama pembeli, nomor WhatsApp `0812-3456-7890`,
-pilih **WhatsApp**, lalu bayar. Tunjukkan status struk otomatis di kartu transaksi; tanpa kredensial WhatsApp,
-`wa.me/6281234567890` terbuka dengan pesan struk siap dikirim. Tombol **Kirim ulang struk** juga bisa dicoba.
+Buka `/kasir`, lihat gambar produk, tambah Kopi Americano, diskon. Ketik `nadia@example.com` pada kolom **Cari / email member**
+— nama Nadia Putri terisi otomatis — lalu bayar. Tunjukkan status struk email di kartu transaksi dan tombol **Kirim ulang struk**.
+Ketik email baru `budi@example.com` pada transaksi berikutnya untuk membuktikan member otomatis tersimpan.
+Buka `/member`, cari `budi` — member baru muncul lengkap dengan jumlah transaksi dan total belanja.
 Lalu buka `/produk`, lihat stok berkurang, klik “+ Stok” → riwayat mutasi tercatat.
 
 ### 6. Laporan (1 menit)
@@ -65,7 +66,7 @@ Isi kredensial sandbox `.env`, buka `/tagihan` → “Bayar otomatis (Midtrans)�
 dan aktivasi paket yang idempoten. Tanpa kredensial, alur transfer manual tetap tampil dan bisa dibuktikan sampai paket aktif.
 
 ## Penutup (30 detik)
-“Satu produk, dua pembayaran: langganan outlet + komisi agensi. Gambar produk, kasir, stok, barcode, struk otomatis WA/email, Midtrans, dan webhook terverifikasi sudah berjalan.”
+“Satu produk, dua pembayaran: langganan outlet + komisi agensi. Gambar produk, kasir, member, stok, barcode, struk email otomatis, Midtrans, dan webhook terverifikasi sudah berjalan.”
 
 ## Reset data
 `npm run db:seed` menghapus data demo dan mengisinya ulang.

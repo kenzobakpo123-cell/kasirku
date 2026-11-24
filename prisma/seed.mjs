@@ -11,6 +11,7 @@ async function reset() {
     db.saleItem.deleteMany(),
     db.stockMovement.deleteMany(),
     db.sale.deleteMany(),
+    db.customer.deleteMany(),
     db.payment.deleteMany(),
     db.referral.deleteMany(),
     db.referralCode.deleteMany(),
@@ -57,7 +58,14 @@ async function addProduct(tenantId, name, price, cost, stock, minStock, sku, ima
   });
 }
 
-async function addSale({ tenantId, cashierId, products, lines, discount, daysAgo }) {
+async function addCustomer(tenantId, name, email, note) {
+  return db.customer.create({
+    data: { tenantId, name, email, note },
+    select: { id: true, name: true, email: true },
+  });
+}
+
+async function addSale({ tenantId, cashierId, products, lines, discount, daysAgo, customer }) {
   const selected = lines.map(({ index, qty }) => ({ product: products[index], qty }));
   const subtotal = selected.reduce((sum, item) => sum + item.product.price * item.qty, 0);
   const total = subtotal - discount;
@@ -77,6 +85,10 @@ async function addSale({ tenantId, cashierId, products, lines, discount, daysAgo
         paid: total,
         method: "CASH",
         createdAt,
+        customerId: customer?.id ?? null,
+        customerName: customer?.name ?? null,
+        customerEmail: customer?.email ?? null,
+        receiptChannel: customer ? "EMAIL" : "NONE",
         items: {
           create: selected.map((item) => ({
             productId: item.product.id,
@@ -141,6 +153,12 @@ async function main() {
     });
   }
 
+  const kopiMembers = [
+    await addCustomer(kopi.id, "Nadia Putri", "nadia@example.com", "Langganan kopi tiap pagi"),
+    await addCustomer(kopi.id, "Rizky Ananda", "rizky@example.com", null),
+  ];
+  const bajuMember = await addCustomer(baju.id, "Maya Sari", "maya@example.com", "Suka kemeja flanel");
+
   const kopiProducts = [
     await addProduct(kopi.id, "Kopi Americano", 18000, 6000, 40, 10, "KS-AMER-001", productImage("A", "#d9c7a3")),
     await addProduct(kopi.id, "Kopi Latte", 22000, 8000, 30, 10, "KS-LATE-002", productImage("L", "#e7d6bd")),
@@ -160,6 +178,7 @@ async function main() {
       ],
       discount: index % 3 === 0 ? 2000 : 0,
       daysAgo,
+      customer: kopiMembers[index % kopiMembers.length],
     });
   }
 
@@ -175,6 +194,7 @@ async function main() {
     lines: [{ index: 0, qty: 2 }],
     discount: 5000,
     daysAgo: 1,
+    customer: bajuMember,
   });
 
   await db.payment.create({
@@ -195,6 +215,7 @@ async function main() {
   console.log("Agensi     : agency@kasirku.test / agency12345 (kode RANI15)");
   console.log("Kopi Senja : kopi@kasirku.test / demo12345");
   console.log("Baju Rapi  : baju@kasirku.test / demo12345");
+  console.log("Member demo: nadia@example.com, rizky@example.com, maya@example.com");
 }
 
 main()

@@ -30,6 +30,11 @@ const items = (isAgency: boolean, isAdmin: boolean): Item[] => [
     icon: <svg viewBox="0 0 24 24" {...stroke}><path d="m3 7 9-4 9 4v10l-9 4-9-4V7Z" /><path d="m3 7 9 4 9-4M12 11v10" /></svg>,
   },
   {
+    href: "/member",
+    label: "Member",
+    icon: <svg viewBox="0 0 24 24" {...stroke}><circle cx="9" cy="8" r="3" /><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6M17 8v6M14 11h6" /></svg>,
+  },
+  {
     href: "/laporan",
     label: "Laporan",
     icon: <svg viewBox="0 0 24 24" {...stroke}><path d="M4 20V4M4 20h16M7 15l4-5 3 3 5-7" /></svg>,
@@ -96,11 +101,11 @@ export function SidebarNav({
   return (
     <nav className="app-nav" aria-label="Navigasi utama">
       <span className="app-nav-label">Workspace</span>
-      {links.slice(0, 4).map((item) => (
+      {links.slice(0, 5).map((item) => (
         <NavLink key={item.href} item={item} active={pathname === item.href} />
       ))}
       <span className="app-nav-label">Pengelolaan</span>
-      {links.slice(4).map((item) => (
+      {links.slice(5).map((item) => (
         <NavLink key={item.href} item={item} active={pathname === item.href} />
       ))}
     </nav>

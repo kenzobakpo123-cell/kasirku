@@ -93,20 +93,25 @@ Pembayaran manual dan Midtrans keduanya menulis row `Payment`. Aktivasi paket ha
 hanya dari `PENDING`. Webhook juga mengecek ulang status ke API Midtrans dan membandingkan nominal sebelum
 mengaktifkan langganan, sehingga notifikasi palsu tidak bisa mengubah paket.
 
-## Gambar produk & struk pembeli
+## Gambar, member, dan struk pembeli
 
 Gambar dikompres di browser menjadi JPEG maksimal 720 px dan disimpan sebagai data URL di kolom `Product.imageData`
 (`MEDIUMTEXT`). Ini membuat deploy portabel — tidak ada folder upload yang hilang di serverless — dengan batas
 2 MB per gambar. Browser melakukan pratinjau sebelum produk disimpan, dan nama file bisa dipakai sebagai nama produk.
 
-Struk dibuat dari data transaksi yang sudah tersimpan, lalu dikirim dari server setelah commit database. WhatsApp
-memakai WhatsApp Business Cloud API bila `WHATSAPP_ACCESS_TOKEN` dan `WHATSAPP_PHONE_NUMBER_ID` tersedia; email
-memakai Resend. Dev tanpa kredensial mengembalikan tautan `wa.me` yang sudah ditujukan dan mencatat isi email di log.
-Kegagalan pengiriman tidak menggulung transaksi: hasilnya disimpan di `receiptSent`/`receiptError` dan bisa diulang
-lewat `/api/sales/[id]/resend`. Nomor pembeli dinormalisasi ke E.164 Indonesia sebelum dikirim.
+`Customer` adalah member per tenant dengan pasangan unik `(tenantId, email)`. Di dalam transaksi penjualan, server
+mengakukan `upsert` berdasarkan email pembeli: email lama memakai member yang ada, email baru langsung mendaftar.
+`Sale` menyimpan `customerId` sekaligus snapshot `customerName`/`customerEmail`, sehingga riwayat tetap benar bila
+data member diubah atau member dihapus. Endpoint `/api/customers` mendukung pencarian nama/email dan ringkasan
+jumlah transaksi serta total belanja lewat `groupBy`.
+
+Struk dibuat dari data transaksi yang sudah tersimpan, lalu dikirim dari server setelah commit database lewat Resend.
+Dev tanpa `RESEND_API_KEY` mencatat isi email di log; production mewajibkannya. Kegagalan pengiriman tidak menggulung
+transaksi: hasilnya disimpan di `receiptSent`/`receiptError` dan bisa diulang lewat `/api/sales/[id]/resend`.
 
 ## Tradeoff yang disengaja
 
+- Identitas member adalah email, bukan nomor telepon; lebih mudah dicari dan tidak perlu kanal WhatsApp
 - Gambar produk disimpan di database, bukan object storage; cocok untuk katalog UMKM, bukan ribuan foto resolusi tinggi
 - Rate limit masih in-memory, bukan Redis
 - Barcode kamera butuh `localhost` atau HTTPS; input SKU manual tetap tersedia untuk scanner hardware

@@ -26,10 +26,10 @@ Tujuan: calon pembeli (agensi/freelancer) paham dalam 3 menit bahwa ini produk y
 
 ## 1:15–1:55 — Kasir + stok
 
-**Layar:** ganti tenant ke Kopi Senja, buka `/produk`, tunjukkan gambar produk dan klik **Label** pada Kopi Americano, lalu buka `/kasir`, klik **Scan barcode**, arahkan kamera ke label — produk masuk keranjang. Isi nama dan nomor WhatsApp pembeli, pilih **WhatsApp**, diskon, bayar. Tunjukkan status "Struk otomatis terkirim" dan struknya, lalu klik cetak. Buka `/produk`, lihat stok turun, klik **+ Stok**.
+**Layar:** ganti tenant ke Kopi Senja, buka `/produk`, tunjukkan gambar produk dan klik **Label** pada Kopi Americano, lalu buka `/kasir`, klik **Scan barcode**, arahkan kamera ke label — produk masuk keranjang. Ketik `nadia@example.com`, tunjukkan nama member terisi otomatis, diskon, bayar. Tunjukkan status "Struk otomatis terkirim ke email pembeli" dan struknya, lalu klik cetak. Buka `/member`, cari email itu. Buka `/produk`, lihat stok turun, klik **+ Stok**.
 
 **Narasi:**
-"Tiap produk punya gambar; tinggal pilih file dan nama produk bisa diambil dari nama file. Label barcode CODE128 bisa dicetak langsung. Scanner memakai kamera, dengan fallback lintas browser; kalau kamera tidak tersedia, SKU tetap bisa diketik. Setelah bayar, server langsung mengirim struk ke WhatsApp atau email pembeli — kasir tidak perlu menyalin atau membagikan manual. Transaksi diproses dengan transaksi database bersyarat: stok hanya berkurang kalau masih cukup. Tidak bisa minus, tidak ada dobel transaksi."
+"Tiap produk punya gambar; tinggal pilih file dan nama produk bisa diambil dari nama file. Label barcode CODE128 bisa dicetak langsung. Scanner memakai kamera, dengan fallback lintas browser; kalau kamera tidak tersedia, SKU tetap bisa diketik. Pembeli cukup diidentifikasi lewat email: member lama langsung dikenali, email baru otomatis jadi member. Setelah bayar, server langsung mengirim struk ke email — kasir tidak perlu menyalin atau membagikan manual. Transaksi diproses dengan transaksi database bersyarat: stok hanya berkurang kalau masih cukup. Tidak bisa minus, tidak ada dobel transaksi."
 
 ## 1:55–2:20 — Laporan & CSV
 

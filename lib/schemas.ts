@@ -37,10 +37,21 @@ export const productSchema = z.object({
   outletId: z.number().int().positive().optional(),
 });
 
-const receiptChannelSchema = z.enum(["NONE", "WHATSAPP", "EMAIL", "BOTH"]);
+export const customerSchema = z.object({
+  name: z.string().trim().min(1).max(120),
+  email: z
+    .email()
+    .max(120)
+    .transform((value) => value.toLowerCase()),
+  note: z.string().trim().max(200).optional(),
+});
 
-export const saleSchema = z
-  .object({
+export const customerUpdateSchema = customerSchema.partial().refine(
+  (value) => Object.keys(value).length > 0,
+  { message: "Minimal satu field harus diisi" },
+);
+
+export const saleSchema = z.object({
   outletId: z.number().int().positive(),
   items: z
     .array(
@@ -56,26 +67,14 @@ export const saleSchema = z
   method: z.enum(["CASH", "QRIS", "TRANSFER", "OTHER"]).default("CASH"),
   note: z.string().trim().max(200).optional(),
   idempotencyKey: z.string().trim().min(8).max(80).optional(),
-  customerName: z.string().trim().max(120).optional(),
-  customerPhone: z
-    .string()
-    .trim()
-    .max(32)
-    .refine((value) => /^\+?\d[\d\s().-]{6,30}$/.test(value), {
-      message: "Nomor WhatsApp tidak valid",
-    })
-    .optional(),
-  customerEmail: z.email().max(120).optional(),
-  receiptChannel: receiptChannelSchema.default("NONE"),
-})
-  .refine((value) => !value.receiptChannel.includes("WHATSAPP") || Boolean(value.customerPhone), {
-    message: "Nomor WhatsApp pembeli wajib diisi",
-    path: ["customerPhone"],
-  })
-  .refine((value) => !value.receiptChannel.includes("EMAIL") || Boolean(value.customerEmail), {
-    message: "Email pembeli wajib diisi",
-    path: ["customerEmail"],
-  });
+  customerName: z.string().trim().min(1).max(120),
+  customerEmail: z
+    .email()
+    .max(120)
+    .transform((value) => value.toLowerCase()),
+  // Transaksi baru selalu email; NONE hanya dipakai data historis/seed.
+  receiptChannel: z.literal("EMAIL").default("EMAIL"),
+});
 
 export function isDuplicateKeyError(error: unknown): boolean {
   return typeof error === "object" && error !== null && "code" in error && error.code === "P2002";

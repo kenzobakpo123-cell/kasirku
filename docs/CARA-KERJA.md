@@ -1,6 +1,6 @@
 # Cara kerja Kasirku
 
-Dokumen ini menjelaskan alur utama: **gambar produk**, **barcode kasir**, **pembayaran langganan**, dan **struk otomatis ke pembeli**.
+Dokumen ini menjelaskan alur utama: **gambar produk**, **barcode kasir**, **member**, **pembayaran langganan**, dan **struk email otomatis**.
 
 ## 1. Alur penjualan di kasir
 
@@ -8,10 +8,11 @@ Dokumen ini menjelaskan alur utama: **gambar produk**, **barcode kasir**, **pemb
 2. Gambar tampil di daftar produk, di daftar produk kasir, dan di keranjang. Data demo sudah memakai gambar untuk tiap produk.
 3. Kasir membuka `/kasir`, mencari nama/SKU, atau memindai barcode.
 4. Saat barcode terbaca, SKU dicocokkan dengan produk. Produk langsung masuk keranjang dan kolom pencarian terisi otomatis.
-5. Kasir mengisi nama/kontak pembeli, memilih kanal struk, memasukkan uang bayar, lalu menekan **Bayar**.
-6. Server membuat transaksi dalam satu database transaction: nomor invoice dibuat, stok dicek, stok dikurangi, dan mutasi stok dicatat. Kalau stok tidak cukup, transaksi ditolak — tidak pernah minus.
-7. Setelah transaksi tersimpan, server mengirim struk ke WhatsApp/email pembeli. Struk juga muncul di layar untuk dicetak 58 mm.
-8. `/laporan` otomatis menampilkan omzet, laba kotor, produk terlaris, dan stok menipis.
+5. Kasir memilih member dari daftar atau mengetik email baru, mengisi nama, memasukkan uang bayar, lalu menekan **Bayar**.
+6. Email baru otomatis tersimpan sebagai member. Email yang sudah ada memakai data member tersebut, jadi tidak perlu daftar manual tiap transaksi.
+7. Server membuat transaksi dalam satu database transaction: nomor invoice dibuat, member dihubungkan, stok dicek, stok dikurangi, dan mutasi stok dicatat. Kalau stok tidak cukup, transaksi ditolak — tidak pernah minus.
+8. Setelah transaksi tersimpan, server mengirim struk ke email member. Struk juga muncul di layar untuk dicetak 58 mm.
+9. `/laporan` otomatis menampilkan omzet, laba kotor, produk terlaris, dan stok menipis.
 
 Idempotency key mencegah transaksi dobel saat jaringan mati: antrean offline memakai kunci yang sama ketika disinkronkan ulang.
 
@@ -63,27 +64,25 @@ Nominal PRO dihitung per outlet (`Rp199.000 × jumlah outlet`), Agency flat `Rp4
 
 Tanpa kredensial Midtrans, tombol otomatis mengembalikan pesan yang jelas dan transfer manual tetap berfungsi. Midtrans tidak disimpan di repo.
 
-## 4. Struk otomatis ke pembeli
+## 4. Member dan struk email otomatis
 
-Di `/kasir`, bagian **Pembeli & pengiriman struk** berisi nama pembeli, nomor WhatsApp, email, dan pilihan kanal:
+Di `/kasir`, bagian **Member & struk email** berisi dua kolom: **Cari / email member** dan **Nama member**.
 
-- **WhatsApp** — kirim lewat WhatsApp Business Cloud API bila `WHATSAPP_ACCESS_TOKEN` dan `WHATSAPP_PHONE_NUMBER_ID` diisi.
-- **Email** — kirim lewat Resend bila `RESEND_API_KEY` diisi.
-- **WhatsApp + email** — dua-duanya.
-- **Tidak dikirim** — struk hanya tampil di layar.
+- Ketik email yang sudah terdaftar, atau pilih dari saran yang muncul. Nama member terisi otomatis.
+- Ketik email baru — setelah transaksi berhasil, email itu langsung menjadi member baru di toko tersebut.
+- Email dinormalkan ke huruf kecil, jadi `Nadia@Example.com` dan `nadia@example.com` dianggap member yang sama.
+- Tidak ada kolom nomor WhatsApp dan tidak ada pilihan kanal: struk selalu dikirim ke email.
 
-Pengiriman terjadi dari server setelah transaksi berhasil, sehingga tidak perlu menekan tombol bagikan. Kegagalan pengiriman tidak membatalkan penjualan; status dan alasannya tampil di kartu struk dan tombol **Kirim ulang struk** tersedia.
+Halaman `/member` menampilkan semua member dengan pencarian nama/email, jumlah transaksi, total belanja, dan kunjungan terakhir. Member juga bisa ditambah atau diubah manual di sana. Menghapus member tidak menghapus riwayat transaksinya.
 
-Tanpa kredensial WhatsApp, development otomatis membuka `wa.me/<nomor pembeli>` dengan isi struk sudah terisi — masih langsung ke pembeli, tetapi tombol kirim terakhir tetap di WhatsApp. Tanpa `RESEND_API_KEY`, isi email dicatat di log server supaya alur tetap bisa diuji.
-
-Nomor dinormalisasi ke format `62…`, jadi `0812-3456-7890`, `+62 812 3456 7890`, dan `6281234567890` semuanya dikenali.
+Pengiriman terjadi dari server setelah transaksi berhasil lewat Resend, sehingga kasir tidak perlu menyalin atau membagikan manual. Kegagalan pengiriman tidak membatalkan penjualan; status dan alasannya tampil di kartu struk dan tombol **Kirim ulang struk** tersedia. Tanpa `RESEND_API_KEY`, development mencatat isi email di log server supaya alur tetap bisa diuji; di production variabel ini wajib diisi.
 
 ## 5. Ringkasan untuk demo
 
 ```text
-Daftar/login → tambah produk + gambar + SKU → cetak Label → buka kasir → scan → isi pembeli → bayar
+Daftar/login → tambah produk + gambar + SKU → cetak Label → buka kasir → scan → pilih member → bayar
                                                                               ↓
-                                                       struk otomatis WA/email → stok turun → laporan jadi
+                                                       member tersimpan + struk email → stok turun → laporan jadi
                                                                               ↓
                                      /tagihan → ajukan upgrade → admin setujui → paket aktif
 ```

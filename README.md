@@ -19,12 +19,13 @@ Pembeli langsung: **agensi / freelancer** yang melayani UMKM. Pengguna akhir: **
 
 1. Onboarding tenant + outlet + undang kasir
 2. Produk & stok (CRUD, gambar produk, stok minimum, riwayat mutasi)
-3. Kasir PWA (keranjang, diskon, pembayaran, struk cetak + kirim otomatis WA/email)
-4. Laporan (penjualan harian, produk terlaris, stok menipis, ekspor CSV)
-5. RBAC `OWNER`/`MANAGER`/`CASHIER`/`AGENCY` + audit log + sesi perangkat
-6. Dashboard agensi + kode referral
-7. Billing manual (transfer + verifikasi) **atau otomatis** lewat Midtrans Snap (QRIS/VA/kartu)
-8. Import produk CSV, akun & keamanan (sesi perangkat, ganti password)
+3. Kasir PWA (keranjang, diskon, pembayaran, struk cetak + kirim otomatis ke email)
+4. Member pembeli (tersimpan otomatis lewat email, pencarian cepat, riwayat belanja)
+5. Laporan (penjualan harian, produk terlaris, stok menipis, ekspor CSV)
+6. RBAC `OWNER`/`MANAGER`/`CASHIER`/`AGENCY` + audit log + sesi perangkat
+7. Dashboard agensi + kode referral
+8. Billing manual (transfer + verifikasi) **atau otomatis** lewat Midtrans Snap (QRIS/VA/kartu)
+9. Import produk CSV, akun & keamanan (sesi perangkat, ganti password)
 
 **Roadmap:** purchase order supplier, video demo final, deploy production.
 
@@ -83,7 +84,7 @@ mengonfirmasi status ke API Midtrans sebelum mengaktifkan paket, jadi tidak bisa
 - [x] Billing manual (pengajuan → verifikasi admin → upgrade paket) + batas paket
 - [x] Seed 4 tenant demo (admin, agensi, kopi, butik) + transaksi & stok menipis
 - [x] Laporan harian, laba kotor, produk terlaris, ekspor CSV (penjualan & produk)
-- [x] Struk cetak 58 mm + kirim WhatsApp; pencarian nama/SKU untuk scanner
+- [x] Struk cetak 58 mm + kirim email; pencarian nama/SKU untuk scanner
 - [x] Manajemen tim (RBAC) & outlet, edit produk + restock dengan riwayat mutasi
 - [x] Antrean transaksi offline dengan idempotency key + auto-sinkron
 - [x] Landing page conversion: cara kerja, studi kasus, FAQ, CTA
@@ -94,11 +95,12 @@ mengonfirmasi status ke API Midtrans sebelum mengaktifkan paket, jadi tidak bisa
 - [x] Email verifikasi + lupa/reset password (token di-hash, sekali pakai, Resend)
 - [x] Barcode scanner kamera (BarcodeDetector + fallback ZXing) + label CODE128 per produk
 - [x] Gambar produk (upload ringkas, pratinjau, tampil di kasir & keranjang)
-- [x] Struk otomatis ke pembeli (WhatsApp Business API / Resend + kirim ulang)
+- [x] Member pembeli otomatis dari email + pencarian nama/email + ringkasan belanja
+- [x] Struk email otomatis ke member (Resend + kirim ulang)
 - [x] CI GitHub Actions (typecheck, lint, test, build)
 - [x] Dockerfile + docker-compose produksi + panduan Vercel
 - [x] Naskah video demo 3 menit
-- [x] 57 unit test, lint, typecheck, build hijau + robots/sitemap
+- [x] 58 unit test, lint, typecheck, build hijau + robots/sitemap
 - [ ] Video demo final & deploy production
 
 Cara kerja: [`docs/CARA-KERJA.md`](docs/CARA-KERJA.md). Panduan demo: [`docs/DEMO.md`](docs/DEMO.md).

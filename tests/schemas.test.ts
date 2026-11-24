@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { loginSchema, productSchema, registerSchema, saleSchema } from "@/lib/schemas";
+import {
+  customerSchema,
+  customerUpdateSchema,
+  loginSchema,
+  productSchema,
+  registerSchema,
+  saleSchema,
+} from "@/lib/schemas";
 
 describe("schemas", () => {
   it("menolak email invalid dan password pendek saat daftar", () => {
@@ -40,13 +47,45 @@ describe("schemas", () => {
     ).toBe(false);
   });
 
-  it("mewajibkan kontak pembeli sesuai kanal struk", () => {
-    const base = { outletId: 1, items: [{ productId: 1, qty: 1 }], paid: 18000 };
-    expect(saleSchema.safeParse({ ...base, receiptChannel: "WHATSAPP" }).success).toBe(false);
-    expect(
-      saleSchema.safeParse({ ...base, receiptChannel: "WHATSAPP", customerPhone: "08123456789" }).success,
-    ).toBe(true);
-    expect(saleSchema.safeParse({ ...base, receiptChannel: "EMAIL", customerEmail: "a@b.com" }).success).toBe(true);
+  it("mewajibkan email pembeli untuk struk dan member", () => {
+    const base = {
+      outletId: 1,
+      items: [{ productId: 1, qty: 1 }],
+      paid: 18000,
+      customerName: "Nadia",
+    };
+    expect(saleSchema.safeParse(base).success).toBe(false);
+    expect(saleSchema.safeParse({ ...base, customerEmail: "bukan-email" }).success).toBe(false);
+
+    const valid = saleSchema.safeParse({ ...base, customerEmail: "Nadia@Example.com" });
+    expect(valid.success).toBe(true);
+    if (valid.success) expect(valid.data.customerEmail).toBe("nadia@example.com");
+
+    const withPhone = saleSchema.safeParse({ ...base, customerEmail: "nadia@example.com", customerPhone: "08123" });
+    expect(withPhone.success).toBe(true);
+    if (withPhone.success) {
+      expect(withPhone.data).not.toHaveProperty("customerPhone");
+      expect(withPhone.data.receiptChannel).toBe("EMAIL");
+    }
+    expect(saleSchema.safeParse({ ...base, customerEmail: "nadia@example.com", receiptChannel: "NONE" }).success).toBe(
+      false,
+    );
+  });
+
+  it("menerima member dengan nama dan menormalkan email", () => {
+    expect(customerSchema.safeParse({ name: "", email: "nadia@example.com" }).success).toBe(false);
+    const result = customerSchema.safeParse({
+      name: "Nadia",
+      email: "Nadia@Example.com",
+      note: "Langganan kopi",
+    });
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.email).toBe("nadia@example.com");
+  });
+
+  it("menolak pembaruan member tanpa field", () => {
+    expect(customerUpdateSchema.safeParse({}).success).toBe(false);
+    expect(customerUpdateSchema.safeParse({ note: "Catatan baru" }).success).toBe(true);
   });
 
   it("mengisi default method CASH pada transaksi", () => {
@@ -54,13 +93,23 @@ describe("schemas", () => {
       outletId: 1,
       items: [{ productId: 1, qty: 2 }],
       paid: 36000,
+      customerName: "Nadia",
+      customerEmail: "nadia@example.com",
     });
     expect(result.success).toBe(true);
     if (result.success) expect(result.data.method).toBe("CASH");
   });
 
   it("menolak keranjang kosong", () => {
-    expect(saleSchema.safeParse({ outletId: 1, items: [], paid: 0 }).success).toBe(false);
+    expect(
+      saleSchema.safeParse({
+        outletId: 1,
+        items: [],
+        paid: 0,
+        customerName: "Nadia",
+        customerEmail: "nadia@example.com",
+      }).success,
+    ).toBe(false);
   });
 
   it("login menerima password apa pun sebagai string", () => {

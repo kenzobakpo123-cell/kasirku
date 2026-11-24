@@ -12,6 +12,7 @@ export type ReceiptTextInput = {
   outletName?: string | null;
   number: string;
   customerName?: string | null;
+  customerEmail?: string | null;
   items: ReceiptLine[];
   subtotal: number;
   discount: number;
@@ -30,6 +31,7 @@ export function receiptText(input: ReceiptTextInput): string {
     input.outletName ?? "",
     input.number,
     dateTime(input.createdAt),
+    ...(input.customerEmail ? [`Dikirim ke: ${input.customerEmail}`] : []),
     "",
     ...lines,
     "",

@@ -54,7 +54,7 @@ const features: Array<{ icon: IconName; title: string; body: string }> = [
   {
     icon: "receipt",
     title: "Kasir yang tidak bikin antre panjang",
-    body: "Cari produk, atur diskon, terima bayar, lalu struk langsung jadi. Bisa dicetak 58 mm atau dikirim ke WhatsApp.",
+    body: "Cari produk, pilih member, atur diskon, terima bayar, lalu struk langsung dikirim ke email pembeli.",
   },
   {
     icon: "box",
@@ -95,7 +95,7 @@ const plans = [
     name: "Pro",
     amount: "Rp199.000",
     period: "per outlet / bulan",
-    features: ["Produk & stok tanpa batas", "Multi-kasir + hak akses", "Struk cetak & WhatsApp", "Laporan lengkap + CSV"],
+    features: ["Produk & stok tanpa batas", "Member otomatis dari email", "Struk cetak & email", "Laporan lengkap + CSV"],
     featured: true,
   },
   {
