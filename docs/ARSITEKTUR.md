@@ -71,6 +71,16 @@ Parser CSV mandiri menangani BOM, CRLF, koma dalam quote, dan quote ganda. Heade
 Maksimal 500 baris; SKU duplikat dalam file maupun dengan data toko ditolak. Setiap baris tervalidasi
 memakai `productSchema` yang sama dengan form; stok awal > 0 ditulis sebagai `StockMovement` tipe `RESTOCK`.
 
+## Verifikasi email & reset password
+
+Token verifikasi/reset dibuat 32 byte acak; hanya hash SHA-256 yang disimpan di `EmailToken`, dengan TTL
+24 jam untuk verifikasi dan 60 menit untuk reset. `consumeEmailToken` memakai `updateMany` bersyarat
+`usedAt = null AND expiresAt > now` sehingga token hanya bisa dipakai sekali, juga saat ada request barengan.
+Reset password menaikkan `tokenVersion` dan mencabut semua sesi aktif dalam satu transaksi. Endpoint
+`forgot-password` selalu mengembalikan 200 agar tidak membocorkan email yang terdaftar. Saat `RESEND_API_KEY`
+kosong dan masih development, link dikembalikan di response (`devUrl`) dan dicatat di log untuk keperluan testing;
+di production email wajib dikonfigurasi.
+
 ## Tradeoff yang disengaja
 
 - Belum ada email verifikasi / reset password (direncanakan)

@@ -8,6 +8,10 @@ type Product = { id: number; name: string; sku: string | null; price: number; st
 type Outlet = { id: number; name: string };
 type ReceiptLine = { name: string; qty: number; subtotal: number };
 type Receipt = { number: string; total: number; paid: number; change: number; items: ReceiptLine[] };
+type DetectedBarcode = { rawValue: string };
+type BarcodeDetectorLike = {
+  detect(source: HTMLVideoElement): Promise<DetectedBarcode[]>;
+};
 
 const headers = { "Content-Type": "application/json", "X-Kasirku-Client": "pwa" };
 const newKey = () =>
@@ -28,6 +32,19 @@ async function refreshSession(): Promise<void> {
   await fetch("/api/auth/refresh", { method: "POST", headers });
 }
 
+function barcodeDetector(): BarcodeDetectorLike | null {
+  if (typeof window === "undefined") return null;
+  const Ctor = (window as unknown as {
+    BarcodeDetector?: new (options: { formats: string[] }) => BarcodeDetectorLike;
+  }).BarcodeDetector;
+  if (!Ctor) return null;
+  try {
+    return new Ctor({ formats: ["ean_13", "ean_8", "code_128", "code_39", "upc_a", "qr_code"] });
+  } catch {
+    return null;
+  }
+}
+
 export function KasirClient() {
   const [products, setProducts] = useState<Product[]>([]);
   const [outlets, setOutlets] = useState<Outlet[]>([]);
@@ -43,6 +60,11 @@ export function KasirClient() {
   const [syncing, setSyncing] = useState(false);
   const [pending, setPending] = useState(0);
   const [idempotencyKey, setIdempotencyKey] = useState(newKey);
+  const [scanning, setScanning] = useState(false);
+  const [scanError, setScanError] = useState("");
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const scanFrameRef = useRef<number | null>(null);
   const flushing = useRef(false);
 
   const load = useCallback(async () => {
@@ -95,6 +117,15 @@ export function KasirClient() {
     }
   }, []);
 
+  function stopScan() {
+    if (scanFrameRef.current !== null) cancelAnimationFrame(scanFrameRef.current);
+    scanFrameRef.current = null;
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+    streamRef.current = null;
+    if (videoRef.current) videoRef.current.srcObject = null;
+    setScanning(false);
+  }
+
   useEffect(() => {
     fetchKasirData()
       .then((data) => {
@@ -109,7 +140,11 @@ export function KasirClient() {
       void flush();
     };
     window.addEventListener("online", onOnline);
-    return () => window.removeEventListener("online", onOnline);
+    return () => {
+      window.removeEventListener("online", onOnline);
+      if (scanFrameRef.current !== null) cancelAnimationFrame(scanFrameRef.current);
+      streamRef.current?.getTracks().forEach((track) => track.stop());
+    };
   }, [flush]);
 
   const byId = useMemo(() => new Map(products.map((product) => [product.id, product])), [products]);
@@ -147,6 +182,58 @@ export function KasirClient() {
       return;
     }
     setCart((state) => ({ ...state, [product.id]: current + 1 }));
+  }
+
+  async function startScan() {
+    setScanError("");
+    const detector = barcodeDetector();
+    if (!detector) {
+      setScanError("Browser ini belum mendukung BarcodeDetector. Tetap bisa cari/manual input SKU di kolom pencarian.");
+      return;
+    }
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setScanError("Kamera tidak tersedia. Gunakan input SKU manual.");
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: "environment" } },
+        audio: false,
+      });
+      streamRef.current = stream;
+      setScanning(true);
+      const video = videoRef.current;
+      if (video) {
+        video.srcObject = stream;
+        await video.play();
+      }
+
+      const tick = async () => {
+        if (!video || !streamRef.current) return;
+        try {
+          const codes = await detector.detect(video);
+          const raw = codes[0]?.rawValue?.trim();
+          if (raw) {
+            const match = products.find(
+              (product) => (product.sku ?? "").toUpperCase() === raw.toUpperCase() || String(product.id) === raw,
+            );
+            setQuery(raw);
+            if (match) add(match);
+            else setError(`Barcode ${raw} belum terdaftar sebagai SKU produk.`);
+            stopScan();
+            return;
+          }
+        } catch {
+          // Frame kadang gagal saat kamera masih fokus; lanjutkan frame berikutnya.
+        }
+        scanFrameRef.current = requestAnimationFrame(() => void tick());
+      };
+      scanFrameRef.current = requestAnimationFrame(() => void tick());
+    } catch {
+      setScanError("Akses kamera ditolak. Gunakan input SKU manual.");
+      stopScan();
+    }
   }
 
   function changeQty(productId: number, delta: number) {
@@ -293,13 +380,25 @@ export function KasirClient() {
       <div className="grid grid-2">
         <section className="card">
           <h2 style={{ fontSize: 18 }}>Produk</h2>
-          <input
-            className="input"
-            placeholder="Cari nama / SKU… (bisa dari scanner barcode)"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            style={{ marginBottom: 14 }}
-          />
+          <div className="toolbar" style={{ marginBottom: 14 }}>
+            <input
+              className="input"
+              placeholder="Cari nama / SKU… (bisa dari scanner barcode)"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              style={{ flex: 1, marginBottom: 0 }}
+            />
+            <button className="btn btn-ghost btn-sm" type="button" onClick={scanning ? stopScan : () => void startScan()}>
+              {scanning ? "⏹ Hentikan scan" : "📷 Scan barcode"}
+            </button>
+          </div>
+          {scanning ? (
+            <div style={{ marginBottom: 14 }}>
+              <video ref={videoRef} playsInline muted style={{ width: "100%", maxHeight: 240, borderRadius: 10, background: "#000" }} />
+              <p className="small muted">Arahkan kamera ke barcode/SKU produk.</p>
+            </div>
+          ) : null}
+          {scanError ? <p className="small" style={{ color: "var(--warn)", marginTop: -6 }}>{scanError}</p> : null}
           {loading ? (
             <p className="empty">Memuat…</p>
           ) : filtered.length === 0 ? (

@@ -26,7 +26,7 @@ async function reset() {
 
 async function createUser({ name, email, plainPassword }) {
   return db.user.create({
-    data: { name, email, passwordHash: password(plainPassword) },
+    data: { name, email, passwordHash: password(plainPassword), emailVerifiedAt: new Date() },
     select: { id: true, name: true, email: true },
   });
 }

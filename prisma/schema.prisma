@@ -47,14 +47,16 @@ enum PaymentStatus {
 }
 
 model User {
-  id           Int      @id @default(autoincrement())
-  name         String   @db.VarChar(80)
-  email        String   @unique @db.VarChar(120)
-  passwordHash String   @db.VarChar(255)
-  tokenVersion Int      @default(0)
-  createdAt    DateTime @default(now())
+  id             Int       @id @default(autoincrement())
+  name           String    @db.VarChar(80)
+  email          String    @unique @db.VarChar(120)
+  passwordHash   String    @db.VarChar(255)
+  tokenVersion   Int       @default(0)
+  emailVerifiedAt DateTime?
+  createdAt      DateTime  @default(now())
 
   sessions         Session[]
+  emailTokens      EmailToken[]
   memberships      Membership[]
   ownedTenants     Tenant[]        @relation("TenantOwner")
   sales            Sale[]
@@ -62,6 +64,24 @@ model User {
   referrals        Referral[]      @relation("ReferralAgency")
   reviewedPayments Payment[]       @relation("PaymentReviewer")
   auditLogs        AuditLog[]
+}
+
+enum EmailTokenType {
+  VERIFY
+  RESET
+}
+
+model EmailToken {
+  id        Int             @id @default(autoincrement())
+  userId    Int
+  tokenHash String          @unique @db.VarChar(64)
+  type      EmailTokenType
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime        @default(now())
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type])
 }
 
 model Session {

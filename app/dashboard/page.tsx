@@ -47,6 +47,12 @@ export default async function DashboardPage() {
         </Link>
       </div>
 
+      {!viewer.emailVerifiedAt ? (
+        <div className="notice" style={{ marginBottom: 18 }}>
+          Email kamu belum diverifikasi. <Link href="/akun#verifikasi">Kirim ulang link verifikasi</Link> dari halaman akun.
+        </div>
+      ) : null}
+
       <div className="grid grid-3">
         <div className="card stat">
           <div className="label">Penjualan hari ini</div>

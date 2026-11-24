@@ -20,11 +20,13 @@ export function AccountClient({
   email,
   sessions,
   currentId,
+  emailVerifiedAt,
 }: {
   name: string;
   email: string;
   sessions: Session[];
   currentId: number | null;
+  emailVerifiedAt: Date | null;
 }) {
   const router = useRouter();
   const [current, setCurrent] = useState("");
@@ -63,6 +65,22 @@ export function AccountClient({
     }
   }
 
+  async function resendVerification() {
+    setError("");
+    setNotice("");
+    setBusy("verify");
+    try {
+      const res = await fetch("/api/auth/verify-email/request", { method: "POST", headers });
+      const data = (await res.json()) as { error?: string; devUrl?: string; alreadyVerified?: boolean };
+      if (!res.ok) throw new Error(data.error ?? "Gagal mengirim email.");
+      setNotice(data.devUrl ? `Mode development — link: ${data.devUrl}` : data.alreadyVerified ? "Email sudah terverifikasi." : "Link verifikasi dikirim ke email kamu.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Gagal mengirim email.");
+    } finally {
+      setBusy("");
+    }
+  }
+
   async function revoke(session: Session) {
     if (!window.confirm(`Cabut akses perangkat ${session.label}?`)) return;
     setError("");
@@ -95,6 +113,24 @@ export function AccountClient({
 
       {error ? <div className="error" role="alert">{error}</div> : null}
       {notice ? <p className="small" style={{ color: "var(--ok)" }}>{notice}</p> : null}
+
+      <section className="card" id="verifikasi" style={{ marginBottom: 18 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+          <div>
+            <h2 style={{ fontSize: 18, margin: 0 }}>Verifikasi email</h2>
+            <p className="small muted" style={{ margin: "4px 0 0" }}>
+              {emailVerifiedAt ? "Email kamu sudah terverifikasi." : `Belum terverifikasi untuk ${email}.`}
+            </p>
+          </div>
+          {!emailVerifiedAt ? (
+            <button className="btn btn-ghost btn-sm" type="button" disabled={busy !== ""} onClick={resendVerification}>
+              {busy === "verify" ? "Mengirim…" : "Kirim ulang link"}
+            </button>
+          ) : (
+            <span className="badge badge-ok">Terverifikasi</span>
+          )}
+        </div>
+      </section>
 
       <div className="grid grid-2">
         <section className="card">

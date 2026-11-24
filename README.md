@@ -90,12 +90,16 @@ mengonfirmasi status ke API Midtrans sebelum mengaktifkan paket, jadi tidak bisa
 - [x] Import produk CSV (header ID/EN, validasi baris, batas paket, riwayat stok)
 - [x] Akun & keamanan: sesi perangkat + cabut akses, ganti password mencabut sesi lain
 - [x] Midtrans Snap (checkout + webhook terverifikasi + aktivasi paket idempoten)
+- [x] Email verifikasi + lupa/reset password (token di-hash, sekali pakai, Resend)
+- [x] Barcode scanner kamera (BarcodeDetector) dengan fallback input SKU
 - [x] CI GitHub Actions (typecheck, lint, test, build)
-- [x] 49 unit test, lint, typecheck, build hijau (37 route) + robots/sitemap
-- [ ] Email verifikasi, barcode kamera
-- [ ] Video demo & deploy
+- [x] Dockerfile + docker-compose produksi + panduan Vercel
+- [x] Naskah video demo 3 menit
+- [x] 51 unit test, lint, typecheck, build hijau (44 route) + robots/sitemap
+- [ ] Video demo final & deploy production
 
 Panduan demo: [`docs/DEMO.md`](docs/DEMO.md). Catatan teknis: [`docs/ARSITEKTUR.md`](docs/ARSITEKTUR.md).
+Deploy: [`docs/DEPLOY.md`](docs/DEPLOY.md). Naskah video: [`docs/VIDEO.md`](docs/VIDEO.md).
 
 ## Catatan
 

@@ -16,7 +16,13 @@ export default async function AccountPage() {
 
   return (
     <AppShell viewer={viewer} memberships={memberships} activeTenantId={tenantId} isAgency={isAgency} isAdmin={isAdmin}>
-      <AccountClient name={viewer.name} email={viewer.email} sessions={sessions} currentId={viewer.sid} />
+      <AccountClient
+        name={viewer.name}
+        email={viewer.email}
+        sessions={sessions}
+        currentId={viewer.sid}
+        emailVerifiedAt={viewer.emailVerifiedAt}
+      />
     </AppShell>
   );
 }

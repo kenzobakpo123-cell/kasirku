@@ -5,6 +5,8 @@ import { ACCESS_TOKEN_MAX_AGE, REFRESH_TOKEN_MAX_AGE, signAccessToken } from "@/
 import { audit } from "@/lib/audit";
 import { setAuthCookies, setTenantCookie } from "@/lib/cookies";
 import { db } from "@/lib/db";
+import { createEmailToken } from "@/lib/email-tokens";
+import { sendMail, verificationMail } from "@/lib/mail";
 import { deviceLabel, forbidden, isSameOrigin, rateLimit, clientIp } from "@/lib/security";
 import { registerSchema } from "@/lib/schemas";
 import { hashToken, newToken } from "@/lib/tokens";
@@ -94,9 +96,24 @@ export async function POST(req: NextRequest) {
     return { user, tenant, session };
   });
 
+  let devVerifyUrl: string | undefined;
+  try {
+    const verifyToken = await createEmailToken(result.user.id, "VERIFY");
+    const mail = await sendMail(verificationMail(result.user.email, verifyToken));
+    devVerifyUrl = mail.devUrl;
+  } catch {
+    // Pendaftaran tetap berhasil; verifikasi bisa diminta ulang dari dashboard.
+  }
+
   const token = await signAccessToken(result.user.id, result.user.tokenVersion, result.session.id);
   const res = NextResponse.json(
-    { ok: true, tenant: result.tenant, referredBy: Boolean(referral), expiresIn: ACCESS_TOKEN_MAX_AGE },
+    {
+      ok: true,
+      tenant: result.tenant,
+      referredBy: Boolean(referral),
+      expiresIn: ACCESS_TOKEN_MAX_AGE,
+      ...(devVerifyUrl ? { devVerifyUrl } : {}),
+    },
     { status: 201 },
   );
   setAuthCookies(res, token, refreshToken);

@@ -28,6 +28,7 @@ const baseHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  output: "standalone",
   outputFileTracingRoot: __dirname,
   poweredByHeader: false,
   async headers() {

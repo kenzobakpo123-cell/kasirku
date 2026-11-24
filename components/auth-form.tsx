@@ -97,6 +97,11 @@ export function AuthForm({ mode, defaultReferral = "" }: { mode: Mode; defaultRe
         <button className="btn btn-primary" type="submit" disabled={loading} style={{ width: "100%" }}>
           {loading ? "Tunggu sebentar…" : isRegister ? "Buat akun & toko" : "Masuk"}
         </button>
+        {!isRegister ? (
+          <p className="small muted" style={{ marginBottom: 0 }}>
+            <Link href="/lupa-password">Lupa password?</Link>
+          </p>
+        ) : null}
       </form>
 
       <p className="hint">

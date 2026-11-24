@@ -51,7 +51,11 @@ Matikan network di DevTools, buat transaksi, lalu nyalakan lagi. Antrean otomati
 Buka `/produk` → “Import dari CSV”, unduh contoh, lalu import. Buka `/akun`: lihat perangkat aktif dan
 ganti password (perangkat lain otomatis dicabut).
 
-### 11. Midtrans (opsional, 1 menit)
+### 11. Barcode & email (1 menit)
+Di `/kasir`, klik “📷 Scan barcode” (Chrome/Edge dengan `BarcodeDetector`), atau tetap pakai kolom SKU.
+Daftarkan akun baru di `/register` — tanpa `RESEND_API_KEY`, response register memuat `devVerifyUrl` untuk langsung mencoba verifikasi. Coba juga `/lupa-password`.
+
+### 12. Midtrans (opsional, 1 menit)
 Isi kredensial sandbox `.env`, buka `/tagihan` → “Bayar otomatis (Midtrans)”. Tekankan webhook terverifikasi
 dan aktivasi paket yang idempoten. Tanpa kredensial, alur transfer manual tetap tampil.
 

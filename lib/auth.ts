@@ -36,6 +36,7 @@ export type Viewer = {
   name: string;
   email: string;
   sid: number | null;
+  emailVerifiedAt: Date | null;
 };
 
 async function verifyToken(token: string | undefined | null): Promise<Viewer | null> {
@@ -52,7 +53,7 @@ async function verifyToken(token: string | undefined | null): Promise<Viewer | n
 
     const user = await db.user.findUnique({
       where: { id: uid },
-      select: { id: true, name: true, email: true, tokenVersion: true },
+      select: { id: true, name: true, email: true, tokenVersion: true, emailVerifiedAt: true },
     });
     const tokenVersion = typeof payload.tv === "number" ? payload.tv : 0;
     if (!user || user.tokenVersion !== tokenVersion) return null;
@@ -71,7 +72,7 @@ async function verifyToken(token: string | undefined | null): Promise<Viewer | n
       if (!session || session.revokedAt || session.expiresAt <= now) return null;
     }
 
-    return { uid: user.id, name: user.name, email: user.email, sid };
+    return { uid: user.id, name: user.name, email: user.email, sid, emailVerifiedAt: user.emailVerifiedAt };
   } catch {
     return null;
   }
