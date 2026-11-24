@@ -1,0 +1,395 @@
+"use client";
+
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { rupiah } from "@/lib/format";
+import { dequeueSale, enqueueSale, loadQueue } from "@/lib/offline-queue";
+
+type Product = { id: number; name: string; sku: string | null; price: number; stock: number };
+type Outlet = { id: number; name: string };
+type ReceiptLine = { name: string; qty: number; subtotal: number };
+type Receipt = { number: string; total: number; paid: number; change: number; items: ReceiptLine[] };
+
+const headers = { "Content-Type": "application/json", "X-Kasirku-Client": "pwa" };
+const newKey = () =>
+  typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `kk-${Date.now()}`;
+
+async function fetchKasirData(): Promise<{ products: Product[]; outlets: Outlet[] }> {
+  const [productRes, outletRes] = await Promise.all([
+    fetch("/api/products", { headers }),
+    fetch("/api/outlets", { headers }),
+  ]);
+  if (!productRes.ok || !outletRes.ok) throw new Error("Gagal memuat data kasir.");
+  const productData = (await productRes.json()) as { products: Product[] };
+  const outletData = (await outletRes.json()) as { outlets: Outlet[] };
+  return { products: productData.products, outlets: outletData.outlets };
+}
+
+async function refreshSession(): Promise<void> {
+  await fetch("/api/auth/refresh", { method: "POST", headers });
+}
+
+export function KasirClient() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [outlets, setOutlets] = useState<Outlet[]>([]);
+  const [cart, setCart] = useState<Record<number, number>>({});
+  const [query, setQuery] = useState("");
+  const [discount, setDiscount] = useState("0");
+  const [paid, setPaid] = useState("");
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [receipt, setReceipt] = useState<Receipt | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [pending, setPending] = useState(0);
+  const [idempotencyKey, setIdempotencyKey] = useState(newKey);
+  const flushing = useRef(false);
+
+  const load = useCallback(async () => {
+    try {
+      const data = await fetchKasirData();
+      setProducts(data.products);
+      setOutlets(data.outlets);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Gagal memuat data kasir.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const flush = useCallback(async () => {
+    if (flushing.current) return;
+    const queued = loadQueue();
+    if (queued.length === 0) return;
+
+    flushing.current = true;
+    setSyncing(true);
+    try {
+      await refreshSession();
+      let synced = 0;
+      for (const item of queued) {
+        const res = await fetch("/api/sales", {
+          method: "POST",
+          headers,
+          body: JSON.stringify(item.body),
+        });
+        if (res.ok) {
+          dequeueSale(item.key);
+          synced += 1;
+          continue;
+        }
+        // 4xx selain 401 berarti data tidak bisa disinkron ulang; buang dari antrean.
+        if (res.status >= 400 && res.status < 500 && res.status !== 401) {
+          dequeueSale(item.key);
+        } else {
+          break;
+        }
+      }
+      setPending(loadQueue().length);
+      if (synced > 0) setNotice(`${synced} transaksi offline berhasil disinkronkan.`);
+    } catch {
+      setError("Antrean belum bisa disinkronkan. Coba lagi saat koneksi stabil.");
+    } finally {
+      flushing.current = false;
+      setSyncing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchKasirData()
+      .then((data) => {
+        setProducts(data.products);
+        setOutlets(data.outlets);
+      })
+      .catch((err: unknown) => setError(err instanceof Error ? err.message : "Gagal memuat data kasir."))
+      .finally(() => setLoading(false));
+
+    Promise.resolve().then(() => setPending(loadQueue().length));
+    const onOnline = () => {
+      void flush();
+    };
+    window.addEventListener("online", onOnline);
+    return () => window.removeEventListener("online", onOnline);
+  }, [flush]);
+
+  const byId = useMemo(() => new Map(products.map((product) => [product.id, product])), [products]);
+  const filtered = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    if (!needle) return products;
+    return products.filter(
+      (product) =>
+        product.name.toLowerCase().includes(needle) || (product.sku ?? "").toLowerCase().includes(needle),
+    );
+  }, [products, query]);
+
+  const lines = useMemo(
+    () =>
+      Object.entries(cart)
+        .map(([rawId, qty]) => {
+          const product = byId.get(Number(rawId));
+          return product ? { product, qty } : null;
+        })
+        .filter((line): line is { product: Product; qty: number } => line !== null && line.qty > 0),
+    [cart, byId],
+  );
+
+  const subtotal = lines.reduce((sum, line) => sum + line.product.price * line.qty, 0);
+  const discountValue = Number(discount || 0);
+  const total = Math.max(0, subtotal - discountValue);
+  const paidValue = Number(paid || 0);
+  const change = paidValue - total;
+
+  function add(product: Product) {
+    setError("");
+    const current = cart[product.id] ?? 0;
+    if (current >= product.stock) {
+      setError(`Stok ${product.name} hanya ${product.stock}.`);
+      return;
+    }
+    setCart((state) => ({ ...state, [product.id]: current + 1 }));
+  }
+
+  function changeQty(productId: number, delta: number) {
+    setCart((state) => {
+      const next = (state[productId] ?? 0) + delta;
+      const product = byId.get(productId);
+      if (next <= 0) {
+        const copy = { ...state };
+        delete copy[productId];
+        return copy;
+      }
+      if (product && next > product.stock) return state;
+      return { ...state, [productId]: next };
+    });
+  }
+
+  function clearCart() {
+    setCart({});
+    setDiscount("0");
+    setPaid("");
+    setIdempotencyKey(newKey());
+  }
+
+  async function checkout() {
+    setError("");
+    setNotice("");
+    if (lines.length === 0) {
+      setError("Keranjang masih kosong.");
+      return;
+    }
+    if (outlets.length === 0) {
+      setError("Toko belum punya outlet. Hubungi owner.");
+      return;
+    }
+    if (paidValue < total) {
+      setError(`Pembayaran kurang ${rupiah(total - paidValue)}.`);
+      return;
+    }
+
+    const body = {
+      outletId: outlets[0].id,
+      items: lines.map((line) => ({ productId: line.product.id, qty: line.qty })),
+      discount: discountValue,
+      paid: paidValue,
+      method: "CASH",
+      idempotencyKey,
+    };
+
+    setSaving(true);
+    try {
+      const res = await fetch("/api/sales", {
+        method: "POST",
+        headers,
+        body: JSON.stringify(body),
+      });
+      const data = (await res.json()) as { error?: string; sale?: Omit<Receipt, "items"> };
+      if (!res.ok || !data.sale) throw new Error(data.error ?? "Transaksi gagal.");
+
+      setReceipt({
+        ...data.sale,
+        items: lines.map((line) => ({
+          name: line.product.name,
+          qty: line.qty,
+          subtotal: line.product.price * line.qty,
+        })),
+      });
+      clearCart();
+      await load();
+    } catch (err) {
+      if (err instanceof TypeError) {
+        // Jaringan mati: simpan antrean dengan idempotencyKey yang sama.
+        setPending(enqueueSale({ key: idempotencyKey, body, createdAt: Date.now() }).length);
+        setNotice("Transaksi tersimpan di antrean offline. Akan otomatis disinkron saat koneksi kembali.");
+        clearCart();
+      } else {
+        setError(err instanceof Error ? err.message : "Transaksi gagal.");
+      }
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const waText = receipt
+    ? [
+        "🧾 *Struk Kasirku*",
+        receipt.number,
+        "",
+        ...receipt.items.map((item) => `${item.qty}× ${item.name} — ${rupiah(item.subtotal)}`),
+        "",
+        `Total: ${rupiah(receipt.total)}`,
+        `Dibayar: ${rupiah(receipt.paid)}`,
+        `Kembalian: ${rupiah(receipt.change)}`,
+        "Terima kasih sudah belanja 🙏",
+      ].join("\n")
+    : "";
+  const waHref = `https://wa.me/?text=${encodeURIComponent(waText)}`;
+
+  return (
+    <>
+      <div className="page-head">
+        <div>
+          <h1>Kasir</h1>
+          <p>{outlets[0]?.name ?? "Toko"} · pilih produk, lalu bayar.</p>
+        </div>
+        {pending > 0 || syncing ? (
+          <button className="btn btn-ghost btn-sm" type="button" disabled={syncing} onClick={() => void flush()}>
+            {syncing ? "Menyinkron…" : `Sinkron ${pending} antrean`}
+          </button>
+        ) : null}
+      </div>
+
+      {error ? <div className="error" role="alert">{error}</div> : null}
+      {notice ? <p className="small" style={{ color: "var(--ok)" }}>{notice}</p> : null}
+
+      {receipt ? (
+        <div className="card receipt-print" style={{ marginBottom: 18, borderColor: "var(--ok)" }}>
+          <h2 style={{ fontSize: 18 }}>✅ Transaksi berhasil</h2>
+          <p className="small muted">{receipt.number}</p>
+          {receipt.items.map((item) => (
+            <div className="cart-row" key={item.name}>
+              <span>{item.qty}× {item.name}</span>
+              <span>{rupiah(item.subtotal)}</span>
+            </div>
+          ))}
+          <div className="total-line">
+            <span>Total</span>
+            <span>{rupiah(receipt.total)}</span>
+          </div>
+          <p className="small">Dibayar {rupiah(receipt.paid)} · Kembalian <strong>{rupiah(receipt.change)}</strong></p>
+          <div className="toolbar" style={{ margin: 0 }}>
+            <button className="btn btn-ghost btn-sm no-print" type="button" onClick={() => window.print()}>
+              🖨 Cetak struk
+            </button>
+            <a className="btn btn-ghost btn-sm no-print" href={waHref} target="_blank" rel="noreferrer">
+              💬 Kirim via WhatsApp
+            </a>
+            <button className="btn btn-ghost btn-sm no-print" type="button" onClick={() => setReceipt(null)}>
+              Tutup
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      <div className="grid grid-2">
+        <section className="card">
+          <h2 style={{ fontSize: 18 }}>Produk</h2>
+          <input
+            className="input"
+            placeholder="Cari nama / SKU… (bisa dari scanner barcode)"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            style={{ marginBottom: 14 }}
+          />
+          {loading ? (
+            <p className="empty">Memuat…</p>
+          ) : filtered.length === 0 ? (
+            <p className="empty">Tidak ada produk. Tambahkan dari halaman Produk.</p>
+          ) : (
+            <table>
+              <thead>
+                <tr>
+                  <th>Produk</th>
+                  <th className="num">Harga</th>
+                  <th className="num">Stok</th>
+                  <th className="right"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((product) => (
+                  <tr key={product.id}>
+                    <td>
+                      <div>{product.name}</div>
+                      {product.sku ? <div className="small muted">{product.sku}</div> : null}
+                    </td>
+                    <td className="num">{rupiah(product.price)}</td>
+                    <td className="num muted">{product.stock}</td>
+                    <td className="right">
+                      <button className="btn btn-primary btn-sm" type="button" onClick={() => add(product)}>
+                        +
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </section>
+
+        <section className="card">
+          <h2 style={{ fontSize: 18 }}>Keranjang</h2>
+          {lines.length === 0 ? (
+            <p className="empty">Belum ada item.</p>
+          ) : (
+            lines.map(({ product, qty }) => (
+              <div className="cart-row" key={product.id}>
+                <div>
+                  <div>{product.name}</div>
+                  <div className="small muted">{rupiah(product.price)} × {qty}</div>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <button className="btn btn-ghost btn-sm" type="button" onClick={() => changeQty(product.id, -1)}>−</button>
+                  <strong>{qty}</strong>
+                  <button className="btn btn-ghost btn-sm" type="button" onClick={() => changeQty(product.id, 1)}>+</button>
+                  <span className="small" style={{ minWidth: 90, textAlign: "right" }}>
+                    {rupiah(product.price * qty)}
+                  </span>
+                </div>
+              </div>
+            ))
+          )}
+
+          <div style={{ marginTop: 18 }}>
+            <label className="field">
+              <span>Diskon (Rp)</span>
+              <input className="input" type="number" min={0} value={discount} onChange={(e) => setDiscount(e.target.value)} />
+            </label>
+            <label className="field">
+              <span>Uang diterima (Rp)</span>
+              <input
+                className="input"
+                type="number"
+                min={0}
+                value={paid}
+                onChange={(e) => setPaid(e.target.value)}
+                placeholder="0"
+              />
+            </label>
+          </div>
+
+          <div className="total-line">
+            <span>Total</span>
+            <span>{rupiah(total)}</span>
+          </div>
+          <div className="total-line" style={{ fontSize: 15, color: paidValue < total ? "var(--danger)" : "var(--ok)" }}>
+            <span>Kembalian</span>
+            <span>{rupiah(change)}</span>
+          </div>
+
+          <button className="btn btn-primary" type="button" onClick={checkout} disabled={saving || lines.length === 0} style={{ width: "100%" }}>
+            {saving ? "Memproses…" : `Bayar ${rupiah(total)}`}
+          </button>
+        </section>
+      </div>
+    </>
+  );
+}

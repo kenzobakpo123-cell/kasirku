@@ -1,0 +1,47 @@
+import { describe, expect, it } from "vitest";
+import { loginSchema, productSchema, registerSchema, saleSchema } from "@/lib/schemas";
+
+describe("schemas", () => {
+  it("menolak email invalid dan password pendek saat daftar", () => {
+    const result = registerSchema.safeParse({
+      name: "Andi",
+      tenantName: "Kedai Andi",
+      email: "bukan-email",
+      password: "pendek",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("menerima data pendaftaran yang valid", () => {
+    const result = registerSchema.safeParse({
+      name: "Andi",
+      tenantName: "Kedai Andi",
+      email: "andi@example.com",
+      password: "rahasia-kuat-123",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("menolak harga produk nol atau negatif", () => {
+    expect(productSchema.safeParse({ name: "Kopi", price: 0 }).success).toBe(false);
+    expect(productSchema.safeParse({ name: "Kopi", price: 18000 }).success).toBe(true);
+  });
+
+  it("mengisi default method CASH pada transaksi", () => {
+    const result = saleSchema.safeParse({
+      outletId: 1,
+      items: [{ productId: 1, qty: 2 }],
+      paid: 36000,
+    });
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.method).toBe("CASH");
+  });
+
+  it("menolak keranjang kosong", () => {
+    expect(saleSchema.safeParse({ outletId: 1, items: [], paid: 0 }).success).toBe(false);
+  });
+
+  it("login menerima password apa pun sebagai string", () => {
+    expect(loginSchema.safeParse({ email: "a@b.com", password: "x" }).success).toBe(true);
+  });
+});

@@ -1,0 +1,287 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  OWNER
+  MANAGER
+  CASHIER
+  AGENCY
+  ADMIN
+}
+
+enum Plan {
+  FREE
+  PRO
+  AGENCY
+}
+
+enum StockType {
+  SALE
+  RESTOCK
+  ADJUST
+}
+
+enum PaymentMethod {
+  CASH
+  QRIS
+  TRANSFER
+  OTHER
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  REJECTED
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  name         String   @db.VarChar(80)
+  email        String   @unique @db.VarChar(120)
+  passwordHash String   @db.VarChar(255)
+  tokenVersion Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  sessions         Session[]
+  memberships      Membership[]
+  ownedTenants     Tenant[]        @relation("TenantOwner")
+  sales            Sale[]
+  referralCodes    ReferralCode[]  @relation("ReferralCodes")
+  referrals        Referral[]      @relation("ReferralAgency")
+  reviewedPayments Payment[]       @relation("PaymentReviewer")
+  auditLogs        AuditLog[]
+}
+
+model Session {
+  id                Int       @id @default(autoincrement())
+  userId            Int
+  tokenHash         String    @unique @db.VarChar(64)
+  previousTokenHash String?   @unique @db.VarChar(64)
+  label             String    @db.VarChar(191)
+  ip                String?   @db.VarChar(191)
+  createdAt         DateTime  @default(now())
+  lastUsedAt        DateTime  @default(now())
+  expiresAt         DateTime
+  revokedAt         DateTime?
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+}
+
+model Tenant {
+  id        Int      @id @default(autoincrement())
+  name      String   @db.VarChar(120)
+  slug      String   @unique @db.VarChar(60)
+  ownerId   Int
+  plan      Plan     @default(FREE)
+  createdAt DateTime @default(now())
+
+  owner          User            @relation("TenantOwner", fields: [ownerId], references: [id])
+  memberships    Membership[]
+  outlets        Outlet[]
+  products       Product[]
+  stockMovements StockMovement[]
+  sales          Sale[]
+  subscription   Subscription?
+  referrals      Referral[]      @relation("ReferralTenant")
+  payments       Payment[]
+  auditLogs      AuditLog[]
+}
+
+model Membership {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  tenantId  Int
+  role      Role
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, tenantId])
+  @@index([tenantId, role])
+}
+
+model Outlet {
+  id        Int      @id @default(autoincrement())
+  tenantId  Int
+  name      String   @db.VarChar(120)
+  address   String?  @db.VarChar(255)
+  createdAt DateTime @default(now())
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  products Product[]
+  sales    Sale[]
+
+  @@unique([tenantId, name])
+}
+
+model Product {
+  id        Int      @id @default(autoincrement())
+  tenantId  Int
+  outletId  Int?
+  sku       String?  @db.VarChar(64)
+  name      String   @db.VarChar(160)
+  price     Int
+  cost      Int      @default(0)
+  stock     Int      @default(0)
+  minStock  Int      @default(0)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant        Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  outlet        Outlet?         @relation(fields: [outletId], references: [id], onDelete: SetNull)
+  stockMovements StockMovement[]
+  saleItems     SaleItem[]
+
+  @@unique([tenantId, sku])
+  @@index([tenantId, active])
+}
+
+model StockMovement {
+  id        Int       @id @default(autoincrement())
+  tenantId  Int
+  productId Int
+  delta     Int
+  type      StockType
+  note      String?   @db.VarChar(200)
+  refId     String?   @db.VarChar(64)
+  createdAt DateTime  @default(now())
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, refId])
+  @@index([tenantId, productId, createdAt])
+}
+
+model Sale {
+  id             Int            @id @default(autoincrement())
+  tenantId       Int
+  outletId       Int
+  cashierId      Int
+  number         String         @db.VarChar(40)
+  subtotal       Int
+  discount       Int            @default(0)
+  total          Int
+  paid           Int
+  method         PaymentMethod  @default(CASH)
+  note           String?        @db.VarChar(200)
+  idempotencyKey String?        @db.VarChar(80)
+  createdAt      DateTime       @default(now())
+
+  tenant         Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  outlet         Outlet         @relation(fields: [outletId], references: [id], onDelete: Restrict)
+  cashier        User           @relation(fields: [cashierId], references: [id], onDelete: Restrict)
+  items          SaleItem[]
+
+  @@unique([tenantId, idempotencyKey])
+  @@index([tenantId, createdAt])
+}
+
+model SaleItem {
+  id           Int     @id @default(autoincrement())
+  saleId       Int
+  productId    Int
+  nameSnapshot String  @db.VarChar(160)
+  qty          Int
+  price        Int
+  cost         Int
+
+  sale    Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@index([saleId])
+}
+
+model Subscription {
+  id               Int                @id @default(autoincrement())
+  tenantId         Int                @unique
+  plan             Plan               @default(FREE)
+  status           SubscriptionStatus @default(ACTIVE)
+  currentPeriodEnd DateTime?
+  createdAt        DateTime           @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model ReferralCode {
+  id            Int        @id @default(autoincrement())
+  agencyId      Int
+  code          String     @unique @db.VarChar(24)
+  commissionBps Int        @default(1500)
+  active        Boolean    @default(true)
+  createdAt     DateTime   @default(now())
+
+  agency    User       @relation("ReferralCodes", fields: [agencyId], references: [id], onDelete: Cascade)
+  referrals Referral[]
+
+  @@index([agencyId, active])
+}
+
+model Referral {
+  id            Int      @id @default(autoincrement())
+  codeId        Int
+  agencyId      Int
+  tenantId      Int
+  commissionBps Int      @default(1500)
+  createdAt     DateTime @default(now())
+
+  code   ReferralCode @relation(fields: [codeId], references: [id], onDelete: Restrict)
+  agency User         @relation("ReferralAgency", fields: [agencyId], references: [id], onDelete: Cascade)
+  tenant Tenant       @relation("ReferralTenant", fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([agencyId, tenantId])
+  @@index([codeId])
+}
+
+model Payment {
+  id          Int           @id @default(autoincrement())
+  tenantId    Int
+  amount      Int
+  plan        Plan
+  method      String        @db.VarChar(40)
+  status      PaymentStatus @default(PENDING)
+  proof       String?       @db.VarChar(500)
+  periodStart DateTime      @default(now())
+  periodEnd   DateTime
+  reviewedAt  DateTime?
+  reviewedBy  Int?
+  createdAt   DateTime      @default(now())
+
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  reviewer User?  @relation("PaymentReviewer", fields: [reviewedBy], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@index([tenantId, createdAt])
+}
+
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  tenantId  Int?
+  userId    Int?
+  action    String   @db.VarChar(80)
+  entity    String?  @db.VarChar(80)
+  entityId  Int?
+  ip        String?  @db.VarChar(191)
+  createdAt DateTime @default(now())
+
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, createdAt])
+  @@index([userId, createdAt])
+}
